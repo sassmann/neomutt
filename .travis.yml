@@ -20,8 +20,10 @@ addons:
       - libtokyocabinet-dev
       - libgdbm-dev
       - libdb-dev
-#     - libslang2-dev
 #     - libqdbm-dev
+      # - libslang2-dev
+      # libcaca depends on (and includes for us) the forbidden slang package
+      - libcaca-dev
 
 env:
   global:
@@ -75,15 +77,15 @@ env:
     - OPTS="--with-sasl --enable-pop"
     - OPTS="--with-sasl --enable-imap"
       # Test SLANG (not default Curses)
-#   - OPTS="--with-slang"
+    - OPTS="--with-slang"
       # Miscellaneous options
     - OPTS="--with-mailpath=/home/mutt/mail"
     - OPTS="--with-exec-shell=/bin/bash"
     - OPTS="--enable-sidebar --enable-notmuch"
 
 before_script:
-  - ccache -z
-  - autoreconf -i
+  - ccache --zero-stats
+  - autoreconf --install
 
 script:
   # If this is a pull request, then do one FULL build (see ALL_OPTS above), for job 1, and NOTHING for other jobs.
@@ -91,5 +93,5 @@ script:
   - if [[ $TRAVIS_PULL_REQUEST == 'false' ]]; then ./configure --enable-quick-build $OPTS; make -j2; ./mutt -v; else if [[ $TRAVIS_JOB_NUMBER =~ \.1$ ]]; then ./configure --enable-quick-build $ALL_OPTS; make -j2; ./mutt -v; else true; fi fi
 
 after_script:
-  - ccache -s
+  - ccache --show-stats
 
