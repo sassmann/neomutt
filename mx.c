@@ -1197,31 +1197,6 @@ int mx_sync_mailbox (CONTEXT *ctx, int *index_hint)
   return (rc);
 }
 
-
-/* {maildir,mh}_open_new_message are in mh.c. */
-
-static int mbox_open_new_message (MESSAGE *msg, CONTEXT *dest, HEADER *hdr)
-{
-  msg->fp = dest->fp;
-  return 0;
-}
-
-#ifdef USE_IMAP
-static int imap_open_new_message (MESSAGE *msg, CONTEXT *dest, HEADER *hdr)
-{
-  char tmp[_POSIX_PATH_MAX];
-
-  mutt_mktemp (tmp, sizeof (tmp));
-  if ((msg->fp = safe_fopen (tmp, "w")) == NULL)
-  {
-    mutt_perror (tmp);
-    return (-1);
-  }
-  msg->path = safe_strdup(tmp);
-  return 0;
-}
-#endif
-
 /* args:
  *	dest	destination mailbox
  *	hdr	message being copied (required for maildir support, because
@@ -1229,31 +1204,18 @@ static int imap_open_new_message (MESSAGE *msg, CONTEXT *dest, HEADER *hdr)
  */
 MESSAGE *mx_open_new_message (CONTEXT *dest, HEADER *hdr, int flags)
 {
-  MESSAGE *msg;
-  int (*func) (MESSAGE *, CONTEXT *, HEADER *);
+  /* TODO: Convert this to use dest->mx_ops after
+   * mx_open_mailbox_append() is changed to set mx_ops.
+   */
+  struct mx_ops *ops = mx_get_ops (dest->magic);
   ADDRESS *p = NULL;
+  MESSAGE *msg;
 
-  switch (dest->magic)
+  if (!ops || !ops->open_new_msg)
   {
-    case MUTT_MMDF:
-    case MUTT_MBOX:
-      func = mbox_open_new_message;
-      break;
-    case MUTT_MAILDIR:
-      func = maildir_open_new_message;
-      break;
-    case MUTT_MH:
-      func = mh_open_new_message;
-      break;
-#ifdef USE_IMAP
-    case MUTT_IMAP:
-      func = imap_open_new_message;
-      break;
-#endif
-    default:
       dprint (1, (debugfile, "mx_open_new_message(): function unimplemented for mailbox type %d.\n",
-		  dest->magic));
-      return (NULL);
+              dest->magic));
+      return NULL;
   }
 
   msg = safe_calloc (1, sizeof (MESSAGE));
@@ -1271,8 +1233,8 @@ MESSAGE *mx_open_new_message (CONTEXT *dest, HEADER *hdr, int flags)
 
   if(msg->received == 0)
     time(&msg->received);
-  
-  if (func (msg, dest, hdr) == 0)
+
+  if (ops->open_new_msg (msg, dest, hdr) == 0)
   {
     if (dest->magic == MUTT_MMDF)
       fputs (MMDF_SEP, msg->fp);
@@ -1300,63 +1262,21 @@ MESSAGE *mx_open_new_message (CONTEXT *dest, HEADER *hdr, int flags)
 }
 
 /* check for new mail */
-int mx_check_mailbox (CONTEXT *ctx, int *index_hint, int lock)
+int mx_check_mailbox (CONTEXT *ctx, int *index_hint)
 {
-  int rc;
+  struct mx_ops *ops;
 
-  if (ctx)
+  if (!ctx)
   {
-    if (ctx->locked) lock = 0;
-
-    switch (ctx->magic)
-    {
-      case MUTT_MBOX:
-      case MUTT_MMDF:
-
-	if (lock)
-	{
-	  mutt_block_signals ();
-	  if (mbox_lock_mailbox (ctx, 0, 0) == -1)
-	  {
-	    mutt_unblock_signals ();
-	    return MUTT_LOCKED;
-	  }
-	}
-	
-	rc = mbox_check_mailbox (ctx, index_hint);
-
-	if (lock)
-	{
-	  mutt_unblock_signals ();
-	  mbox_unlock_mailbox (ctx);
-	}
-	
-	return rc;
-
-
-      case MUTT_MH:
-	return (mh_check_mailbox (ctx, index_hint));
-      case MUTT_MAILDIR:
-	return (maildir_check_mailbox (ctx, index_hint));
-
-#ifdef USE_IMAP
-      case MUTT_IMAP:
-	/* caller expects that mailbox may change */
-        imap_allow_reopen (ctx);
-	rc = imap_check_mailbox (ctx, index_hint, 0);
-        imap_disallow_reopen (ctx);
-	return rc;
-#endif /* USE_IMAP */
-
-#ifdef USE_POP
-      case MUTT_POP:
-	return (pop_check_mailbox (ctx, index_hint));
-#endif /* USE_POP */
-    }
+    dprint (1, (debugfile, "mx_check_mailbox: null or invalid context.\n"));
+    return -1;
   }
 
-  dprint (1, (debugfile, "mx_check_mailbox: null or invalid context.\n"));
-  return (-1);
+  ops = mx_get_ops (ctx->magic);
+  if (!ops)
+    return -1;
+
+  return ops->check (ctx, index_hint);
 }
 
 /* return a stream pointer for a message */
