@@ -24,6 +24,11 @@
 #include "sort.h"
 #include "mutt_idna.h"
 
+#ifdef USE_NNTP
+#include "mx.h"
+#include "nntp.h"
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -151,6 +156,17 @@ static int compare_order (const void *a, const void *b)
   HEADER **ha = (HEADER **) a;
   HEADER **hb = (HEADER **) b;
 
+#ifdef USE_NNTP
+  if (Context && Context->magic == M_NNTP)
+  {
+    anum_t na = NHDR (*ha)->article_num;
+    anum_t nb = NHDR (*hb)->article_num;
+    int result = na == nb ? 0 : na > nb ? 1 : -1;
+    AUXSORT (result, a, b);
+    return (SORTCODE (result));
+  }
+  else
+#endif
   /* no need to auxsort because you will never have equality here */
   return (SORTCODE ((*ha)->index - (*hb)->index));
 }
@@ -210,6 +226,46 @@ static int compare_spam (const void *a, const void *b)
   return (SORTCODE(result));
 }
 
+int compare_label (const void *a, const void *b)
+{
+  HEADER **ppa = (HEADER **) a;
+  HEADER **ppb = (HEADER **) b;
+  int     ahas, bhas, result = 0;
+  LIST *la, *lb;
+
+  /* As with compare_spam, not all messages will have the x-label
+   * property.  Blank X-Labels are treated as null in the index
+   * display, so we'll consider them as null for sort, too.       */
+  ahas = (*ppa)->env && (*ppa)->env->labels;
+  bhas = (*ppb)->env && (*ppb)->env->labels;
+
+  /* First we bias toward a message with a label, if the other does not. */
+  if (ahas && !bhas)
+    return (SORTCODE(-1));
+  if (!ahas && bhas)
+    return (SORTCODE(1));
+
+  /* If neither has a label, use aux sort. */
+  if (!ahas && !bhas)
+  {
+    AUXSORT(result, a, b);
+    return (SORTCODE(result));
+  }
+
+  /* If both have a label, we just do a lexical compare. */
+  for (la = (*ppa)->env->labels, lb = (*ppb)->env->labels;
+       la && la->data && lb && lb->data && result == 0;
+       la = la->next, lb = lb->next)
+  {
+    result = mutt_strcasecmp(la->data, lb->data);
+  }
+  if (result == 0 && la == NULL)
+    return (SORTCODE(-1));
+  if (result == 0 && lb == NULL)
+    return (SORTCODE(1));
+  return (SORTCODE(result));
+}
+
 sort_t *mutt_get_sort_func (int method)
 {
   switch (method & SORT_MASK)
@@ -232,6 +288,8 @@ sort_t *mutt_get_sort_func (int method)
       return (compare_score);
     case SORT_SPAM:
       return (compare_spam);
+    case SORT_LABEL:
+      return (compare_label);
     default:
       return (NULL);
   }

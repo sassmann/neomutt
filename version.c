@@ -233,6 +233,11 @@ static struct compile_options comp_opts[] = {
 #else
 	{ "ICONV_NONTRANS", 0 },
 #endif
+#ifdef USE_COMPRESSED
+	{ "USE_COMPRESSED", 1 },
+#else
+	{ "USE_COMPRESSED", 0 },
+#endif
 #ifdef USE_DOTLOCK
 	{ "USE_DOTLOCK", 1 },
 #else
@@ -272,6 +277,11 @@ static struct compile_options comp_opts[] = {
 	{ "USE_NOTMUCH", 1 },
 #else
 	{ "USE_NOTMUCH", 0 },
+#endif
+#ifdef USE_NNTP
+	{ "USE_NNTP", 1 },
+#else
+	{ "USE_NNTP", 0 },
 #endif
 #ifdef USE_POP
 	{ "USE_POP", 1 },

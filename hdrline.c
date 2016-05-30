@@ -248,6 +248,7 @@ int mutt_user_is_recipient (HEADER *h)
  * %f = entire from line
  * %F = like %n, unless from self
  * %g = message labels (e.g. notmuch tags)
+ * %g = newsgroup name (if compiled with NNTP support)
  * %i = message-id
  * %I = initials of author
  * %l = number of lines in the message
@@ -265,6 +266,8 @@ int mutt_user_is_recipient (HEADER *h)
  * %T = $to_chars
  * %u = user (login) name of author
  * %v = first name of author, unless from self
+ * %W = where user is (organization)
+ * %x = `x-comment-to:' field (if present and compiled with NNTP support)
  * %X = number of MIME attachments
  * %y = `x-label:' field (if present)
  * %Y = `x-label:' field (if present, tree unfolded, and != parent's x-label)
@@ -616,6 +619,12 @@ hdr_format_str (char *dest,
 
       break;
 
+#ifdef USE_NNTP
+    case 'q':
+      mutt_format_s (dest, destlen, prefix, hdr->env->newsgroups ? hdr->env->newsgroups : "");
+      break;
+#endif
+
     case 'i':
       mutt_format_s (dest, destlen, prefix, hdr->env->message_id ? hdr->env->message_id : "<no.id>");
       break;
@@ -853,6 +862,22 @@ hdr_format_str (char *dest,
       mutt_format_s (dest, destlen, prefix, buf2);
       break;
 
+    case 'W':
+      if (!optional)
+	mutt_format_s (dest, destlen, prefix, hdr->env->organization ? hdr->env->organization : "");
+      else if (!hdr->env->organization)
+	optional = 0;
+      break;
+
+#ifdef USE_NNTP
+    case 'x':
+      if (!optional)
+	mutt_format_s (dest, destlen, prefix, hdr->env->x_comment_to ? hdr->env->x_comment_to : "");
+      else if (!hdr->env->x_comment_to)
+	optional = 0;
+      break;
+#endif
+
     case 'Z':
     
       ch = ' ';
@@ -894,43 +919,57 @@ hdr_format_str (char *dest,
 
      case 'y':
        if (optional)
-	 optional = hdr->env->x_label ? 1 : 0;
+	 optional = hdr->env->labels ? 1 : 0;
 
        colorlen = add_index_color (dest, destlen, flags, MT_COLOR_INDEX_LABEL);
-       mutt_format_s (dest + colorlen, destlen - colorlen, prefix, NONULL (hdr->env->x_label));
+       mutt_format_s (dest + colorlen, destlen - colorlen, prefix, mutt_labels(NULL, 0, hdr->env, NULL));
        add_index_color (dest + colorlen, destlen - colorlen, flags, MT_COLOR_INDEX);
        break;
- 
+
     case 'Y':
-      if (hdr->env->x_label)
+      if (hdr->env->labels == NULL)
       {
-	i = 1;	/* reduce reuse recycle */
-	htmp = NULL;
-	if (flags & M_FORMAT_TREE
-	    && (hdr->thread->prev && hdr->thread->prev->message
-		&& hdr->thread->prev->message->env->x_label))
-	  htmp = hdr->thread->prev->message;
-	else if (flags & M_FORMAT_TREE
-		 && (hdr->thread->parent && hdr->thread->parent->message
-		     && hdr->thread->parent->message->env->x_label))
-	  htmp = hdr->thread->parent->message;
-	if (htmp && mutt_strcasecmp (hdr->env->x_label,
-				     htmp->env->x_label) == 0)
-	  i = 0;
+        if (optional)
+          optional = 0;
+        mutt_format_s(dest, destlen, prefix, "");
+        break;
       }
       else
-	i = 0;
+      {
+        char labels[HUGE_STRING];
+        char labelstmp[HUGE_STRING];
 
-      if (optional)
-	optional = i;
+        i = 1;  /* reduce reuse recycle */
+        htmp = NULL;
+        if ((flags & M_FORMAT_TREE) &&
+            hdr->thread->prev &&
+            hdr->thread->prev->message &&
+            hdr->thread->prev->message->env->labels)
+          htmp = hdr->thread->prev->message;
+        else if ((flags & M_FORMAT_TREE) &&
+                 hdr->thread->parent &&
+                 hdr->thread->parent->message &&
+                 hdr->thread->parent->message->env->labels)
+          htmp = hdr->thread->parent->message;
 
-      colorlen = add_index_color (dest, destlen, flags, MT_COLOR_INDEX_LABEL);
-      if (i)
-        mutt_format_s (dest + colorlen, destlen - colorlen, prefix, NONULL (hdr->env->x_label));
-      else
-        mutt_format_s (dest + colorlen, destlen - colorlen, prefix, "");
-      add_index_color (dest + colorlen, destlen - colorlen, flags, MT_COLOR_INDEX);
+        mutt_labels(labels, sizeof(labels), hdr->env, NULL);
+        if (htmp)
+        {
+          mutt_labels(labelstmp, sizeof(labelstmp), htmp->env, NULL);
+          if (htmp && mutt_strcasecmp (labels, labelstmp) == 0)
+            i = 0;
+        }
 
+        if (optional)
+	  optional = i;
+
+        colorlen = add_index_color (dest, destlen, flags, MT_COLOR_INDEX_LABEL);
+        if (i)
+	  mutt_format_s (dest + colorlen, destlen - colorlen, prefix, labels);
+        else
+          mutt_format_s (dest + colorlen, destlen - colorlen, prefix, "");
+        add_index_color (dest + colorlen, destlen - colorlen, flags, MT_COLOR_INDEX);
+      }
       break;
 
 #ifdef USE_NOTMUCH

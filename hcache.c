@@ -439,13 +439,19 @@ dump_envelope(ENVELOPE * e, unsigned char *d, int *off, int convert)
   d = dump_char(e->message_id, d, off, 0);
   d = dump_char(e->supersedes, d, off, 0);
   d = dump_char(e->date, d, off, 0);
-  d = dump_char(e->x_label, d, off, convert);
 
   d = dump_buffer(e->spam, d, off, convert);
 
   d = dump_list(e->references, d, off, 0);
   d = dump_list(e->in_reply_to, d, off, 0);
   d = dump_list(e->userhdrs, d, off, convert);
+  d = dump_list(e->labels, d, off, convert);
+
+#ifdef USE_NNTP
+  d = dump_char(e->xref, d, off, 0);
+  d = dump_char(e->followup_to, d, off, 0);
+  d = dump_char(e->x_comment_to, d, off, convert);
+#endif
 
   return d;
 }
@@ -476,13 +482,19 @@ restore_envelope(ENVELOPE * e, const unsigned char *d, int *off, int convert)
   restore_char(&e->message_id, d, off, 0);
   restore_char(&e->supersedes, d, off, 0);
   restore_char(&e->date, d, off, 0);
-  restore_char(&e->x_label, d, off, convert);
 
   restore_buffer(&e->spam, d, off, convert);
 
   restore_list(&e->references, d, off, 0);
   restore_list(&e->in_reply_to, d, off, 0);
   restore_list(&e->userhdrs, d, off, convert);
+  restore_list(&e->labels, d, off, convert);
+
+#ifdef USE_NNTP
+  restore_char(&e->xref, d, off, 0);
+  restore_char(&e->followup_to, d, off, 0);
+  restore_char(&e->x_comment_to, d, off, convert);
+#endif
 }
 
 static int

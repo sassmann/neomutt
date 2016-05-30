@@ -1156,7 +1156,7 @@ descriptions.
 <row><entry>^E or &lt;End&gt;</entry><entry><literal>&lt;eol&gt;</literal></entry><entry>move to the end of the line</entry></row>
 <row><entry>^F or &lt;Right&gt;</entry><entry><literal>&lt;forward-char&gt;</literal></entry><entry>move forward one char</entry></row>
 <row><entry>Esc F</entry><entry><literal>&lt;forward-word&gt;</literal></entry><entry>move forward one word</entry></row>
-<row><entry>&lt;Tab&gt;</entry><entry><literal>&lt;complete&gt;</literal></entry><entry>complete filename or alias</entry></row>
+<row><entry>&lt;Tab&gt;</entry><entry><literal>&lt;complete&gt;</literal></entry><entry>complete filename, alias, or label</entry></row>
 <row><entry>^T</entry><entry><literal>&lt;complete-query&gt;</literal></entry><entry>complete address with query</entry></row>
 <row><entry>^K</entry><entry><literal>&lt;kill-eol&gt;</literal></entry><entry>delete to the end of the line</entry></row>
 <row><entry>Esc d</entry><entry><literal>&lt;kill-eow&gt;</literal></entry><entry>delete to the end of the word</entry></row>
@@ -2349,6 +2349,398 @@ status of the message to be updated.
 See also the <link linkend="postpone">$postpone</link> quad-option.
 </para>
 
+</sect1>
+
+<sect1 id="nntp">
+	<title>NNTP Patch</title>
+	<subtitle>Talk to a Usenet news server</subtitle>
+
+	<sect2 id="nntp-patch">
+		<title>Patch</title>
+
+		<para>
+			To check if Mutt supports <quote>NNTP</quote>, look for
+			<quote>+USE_NNTP</quote> in the mutt version.
+			See: <xref linkend="compile-time-features"/>.
+		</para>
+
+		<itemizedlist>
+			<title>Dependencies:</title>
+			<listitem><para>mutt-1.5.24</para></listitem>
+		</itemizedlist>
+
+		<para>This patch is part of the <ulink url="https://github.com/neomutt/neomutt/wiki">NeoMutt Project</ulink>.</para>
+	</sect2>
+
+	<sect2 id="nntp-intro">
+		<title>Introduction</title>
+
+		<para>Reading news via NNTP</para>
+		<para>
+		If compiled with <emphasis>--enable-nntp</emphasis> option, Mutt can
+		read news from news server via NNTP.  You can open a newsgroup with
+		function ``change-newsgroup'' (default: ``i'').  Default news server
+		can be obtained from <literal>$NNTPSERVER</literal> environment
+		variable or from <literal>/etc/nntpserver</literal> file.  Like other
+		news readers, info about subscribed newsgroups is saved in file by
+		<link linkend="newsrc">$newsrc</link> variable.  The variable <link
+		linkend="news-cache-dir">$news_cache_dir</link> can be used to point
+		to a directory.  Mutt will create a hierarchy of subdirectories named
+		like the account and newsgroup the cache is for.  Also the hierarchy
+		is used to store header cache if Mutt was compiled with <link
+		linkend="header-caching">header cache</link> support.
+		</para>
+	</sect2>
+
+	<sect2 id="nntp-variables">
+		<title>Variables</title>
+
+		<table id="table-nntp-variables">
+			<title>NNTP Variables</title>
+			<tgroup cols="3">
+				<thead>
+					<row>
+						<entry>Name</entry>
+						<entry>Type</entry>
+						<entry>Default</entry>
+					</row>
+				</thead>
+				<tbody>
+					<row>
+						<entry><literal>ask_follow_up</literal></entry>
+						<entry>boolean</entry>
+						<entry><literal>no</literal></entry>
+					</row>
+					<row>
+						<entry><literal>ask_x_comment_to</literal></entry>
+						<entry>boolean</entry>
+						<entry><literal>no</literal></entry>
+					</row>
+					<row>
+						<entry><literal>catchup_newsgroup</literal></entry>
+						<entry>quad</entry>
+						<entry><literal>ask-yes</literal></entry>
+					</row>
+					<row>
+						<entry><literal>followup_to_poster</literal></entry>
+						<entry>quad</entry>
+						<entry><literal>ask-yes</literal></entry>
+					</row>
+					<row>
+						<entry><literal>group_index_format</literal></entry>
+						<entry>string</entry>
+						<entry><literal>%4C %M%N %5s  %-45.45f %d</literal></entry>
+					</row>
+					<row>
+						<entry><literal>inews</literal></entry>
+						<entry>string</entry>
+						<entry>(empty)</entry>
+					</row>
+					<row>
+						<entry><literal>mime_subject</literal></entry>
+						<entry>boolean</entry>
+						<entry><literal>yes</literal></entry>
+					</row>
+					<row>
+						<entry><literal>newsgroups_charset</literal></entry>
+						<entry>string</entry>
+						<entry><literal>utf-8</literal></entry>
+					</row>
+					<row>
+						<entry><literal>newsrc</literal></entry>
+						<entry>string</entry>
+						<entry><literal>~/.newsrc</literal></entry>
+					</row>
+					<row>
+						<entry><literal>news_cache_dir</literal></entry>
+						<entry>string</entry>
+						<entry><literal>~/.mutt</literal></entry>
+					</row>
+					<row>
+						<entry><literal>news_server</literal></entry>
+						<entry>string</entry>
+						<entry>(empty)</entry>
+					</row>
+					<row>
+						<entry><literal>nntp_authenticators</literal></entry>
+						<entry>string</entry>
+						<entry>(empty)</entry>
+					</row>
+					<row>
+						<entry><literal>nntp_context</literal></entry>
+						<entry>number</entry>
+						<entry><literal>1000</literal></entry>
+					</row>
+					<row>
+						<entry><literal>nntp_listgroup</literal></entry>
+						<entry>boolean</entry>
+						<entry><literal>yes</literal></entry>
+					</row>
+					<row>
+						<entry><literal>nntp_load_description</literal></entry>
+						<entry>boolean</entry>
+						<entry><literal>yes</literal></entry>
+					</row>
+					<row>
+						<entry><literal>nntp_pass</literal></entry>
+						<entry>string</entry>
+						<entry>(empty)</entry>
+					</row>
+					<row>
+						<entry><literal>nntp_poll</literal></entry>
+						<entry>number</entry>
+						<entry><literal>60</literal></entry>
+					</row>
+					<row>
+						<entry><literal>nntp_user</literal></entry>
+						<entry>string</entry>
+						<entry>(empty)</entry>
+					</row>
+					<row>
+						<entry><literal>post_moderated</literal></entry>
+						<entry>quad</entry>
+						<entry><literal>ask-yes</literal></entry>
+					</row>
+					<row>
+						<entry><literal>save_unsubscribed</literal></entry>
+						<entry>boolean</entry>
+						<entry><literal>no</literal></entry>
+					</row>
+					<row>
+						<entry><literal>show_new_news</literal></entry>
+						<entry>boolean</entry>
+						<entry><literal>yes</literal></entry>
+					</row>
+					<row>
+						<entry><literal>show_only_unread</literal></entry>
+						<entry>boolean</entry>
+						<entry><literal>no</literal></entry>
+					</row>
+					<row>
+						<entry><literal>x_comment_to</literal></entry>
+						<entry>boolean</entry>
+						<entry><literal>no</literal></entry>
+					</row>
+				</tbody>
+			</tgroup>
+		</table>
+	</sect2>
+
+	<sect2 id="nntp-functions">
+		<title>Functions</title>
+
+		<table id="table-nntp-functions">
+			<title>NNTP Functions</title>
+			<tgroup cols="4">
+				<thead>
+					<row>
+						<entry>Menus</entry>
+						<entry>Default Key</entry>
+						<entry>Function</entry>
+						<entry>Description</entry>
+					</row>
+				</thead>
+				<tbody>
+					<row>
+						<entry>browser,index</entry>
+						<entry>y</entry>
+						<entry><literal>&lt;catchup&gt;</literal></entry>
+						<entry>mark all articles in newsgroup as read</entry>
+					</row>
+					<row>
+						<entry>index,pager</entry>
+						<entry>i</entry>
+						<entry><literal>&lt;change-newsgroup&gt;</literal></entry>
+						<entry>open a different newsgroup</entry>
+					</row>
+					<row>
+						<entry>pager</entry>
+						<entry>X</entry>
+						<entry><literal>&lt;change-vfolder&gt;</literal></entry>
+						<entry>open a different virtual folder</entry>
+					</row>
+					<row>
+						<entry>compose</entry>
+						<entry>o</entry>
+						<entry><literal>&lt;edit-followup-to&gt;</literal></entry>
+						<entry>edit the Followup-To field</entry>
+					</row>
+					<row>
+						<entry>compose</entry>
+						<entry>N</entry>
+						<entry><literal>&lt;edit-newsgroups&gt;</literal></entry>
+						<entry>edit the newsgroups list</entry>
+					</row>
+					<row>
+						<entry>compose</entry>
+						<entry>x</entry>
+						<entry><literal>&lt;edit-x-comment-to&gt;</literal></entry>
+						<entry>edit the X-Comment-To field</entry>
+					</row>
+					<row>
+						<entry>pager</entry>
+						<entry>+</entry>
+						<entry><literal>&lt;entire-thread&gt;</literal></entry>
+						<entry>read entire thread of the current message</entry>
+					</row>
+					<row>
+						<entry>attachment,index,pager</entry>
+						<entry>F</entry>
+						<entry><literal>&lt;followup-message&gt;</literal></entry>
+						<entry>followup to newsgroup</entry>
+					</row>
+					<row>
+						<entry>pager</entry>
+						<entry>`</entry>
+						<entry><literal>&lt;modify-labels&gt;</literal></entry>
+						<entry>modify (notmuch) tags</entry>
+					</row>
+					<row>
+						<entry>index,pager</entry>
+						<entry>P</entry>
+						<entry><literal>&lt;post-message&gt;</literal></entry>
+						<entry>post message to newsgroup</entry>
+					</row>
+					<row>
+						<entry>browser</entry>
+						<entry>g</entry>
+						<entry><literal>&lt;reload-active&gt;</literal></entry>
+						<entry>load list of all newsgroups from NNTP server</entry>
+					</row>
+					<row>
+						<entry>browser</entry>
+						<entry>s</entry>
+						<entry><literal>&lt;subscribe&gt;</literal></entry>
+						<entry>subscribe to current mbox (IMAP/NNTP only)</entry>
+					</row>
+					<row>
+						<entry>browser</entry>
+						<entry>S</entry>
+						<entry><literal>&lt;subscribe-pattern&gt;</literal></entry>
+						<entry>subscribe to newsgroups matching a pattern</entry>
+					</row>
+					<row>
+						<entry>browser</entry>
+						<entry>Y</entry>
+						<entry><literal>&lt;uncatchup&gt;</literal></entry>
+						<entry>mark all articles in newsgroup as unread</entry>
+					</row>
+					<row>
+						<entry>browser</entry>
+						<entry>u</entry>
+						<entry><literal>&lt;unsubscribe&gt;</literal></entry>
+						<entry>unsubscribe from current mbox (IMAP/NNTP only)</entry>
+					</row>
+					<row>
+						<entry>browser</entry>
+						<entry>U</entry>
+						<entry><literal>&lt;unsubscribe-pattern&gt;</literal></entry>
+						<entry>unsubscribe from newsgroups matching a pattern</entry>
+					</row>
+					<row>
+						<entry>index,pager</entry>
+						<entry>Alt-i</entry>
+						<entry><literal>&lt;change-newsgroup-readonly&gt;</literal></entry>
+						<entry>open a different newsgroup in read only mode</entry>
+					</row>
+					<row>
+						<entry>attachment,index,pager</entry>
+						<entry>Alt-F</entry>
+						<entry><literal>&lt;forward-to-group&gt;</literal></entry>
+						<entry>forward to newsgroup</entry>
+					</row>
+					<row>
+						<entry>index</entry>
+						<entry>(none)</entry>
+						<entry><literal>&lt;get-children&gt;</literal></entry>
+						<entry>get all children of the current message</entry>
+					</row>
+					<row>
+						<entry>index</entry>
+						<entry>Alt-G</entry>
+						<entry><literal>&lt;get-parent&gt;</literal></entry>
+						<entry>get parent of the current message</entry>
+					</row>
+					<row>
+						<entry>index,pager</entry>
+						<entry>(none)</entry>
+						<entry><literal>&lt;imap-fetch-mail&gt;</literal></entry>
+						<entry>force retrieval of mail from IMAP server</entry>
+					</row>
+					<row>
+						<entry>index,pager</entry>
+						<entry>(none)</entry>
+						<entry><literal>&lt;imap-logout-all&gt;</literal></entry>
+						<entry>logout from all IMAP servers</entry>
+					</row>
+					<row>
+						<entry>pager</entry>
+						<entry>(none)</entry>
+						<entry><literal>&lt;modify-labels-then-hide&gt;</literal></entry>
+						<entry>modify labeld and then hide message</entry>
+					</row>
+					<row>
+						<entry>index</entry>
+						<entry>(none)</entry>
+						<entry><literal>&lt;reconstruct-thread&gt;</literal></entry>
+						<entry>reconstruct thread containing current message</entry>
+					</row>
+					<row>
+						<entry>pager</entry>
+						<entry>Alt-X</entry>
+						<entry><literal>&lt;vfolder-from-query&gt;</literal></entry>
+						<entry>generate virtual folder from query</entry>
+					</row>
+					<row>
+						<entry>index</entry>
+						<entry>Ctrl-G</entry>
+						<entry><literal>&lt;get-message&gt;</literal></entry>
+						<entry>get message with Message-Id</entry>
+					</row>
+				</tbody>
+			</tgroup>
+		</table>
+	</sect2>
+
+	<sect2 id="nntp-commands">
+		<title>Commands</title>
+	</sect2>
+
+	<sect2 id="nntp-colors">
+		<title>Colors</title>
+		<para>None</para>
+	</sect2>
+
+	<sect2 id="nntp-sort">
+		<title>Sort</title>
+		<para>None</para>
+	</sect2>
+
+	<sect2 id="nntp-muttrc">
+		<title>Muttrc</title>
+	</sect2>
+
+	<sect2 id="nntp-see-also">
+		<title>See Also</title>
+
+		<itemizedlist>
+			<listitem><para><ulink url="https://github.com/neomutt/neomutt/wiki">NeoMutt Project</ulink></para></listitem>
+			<listitem><para><link linkend="compile-time-features">Compile-Time Features</link></para></listitem>
+		</itemizedlist>
+	</sect2>
+
+	<sect2 id="nntp-known-bugs">
+		<title>Known Bugs</title>
+	</sect2>
+
+	<sect2 id="nntp-credits">
+		<title>Credits</title>
+		<itemizedlist>
+		<listitem><para>Vsevolod Volkov <email>vvv@mutt.org.ua</email></para></listitem>
+		<listitem><para>Felix von Leitner <email>leitner@fefe.de</email></para></listitem>
+		<listitem><para>Richard Russon <email>rich@flatcap.org</email></para></listitem>
+		</itemizedlist>
+	</sect2>
 </sect1>
 
 </chapter>
@@ -5176,8 +5568,8 @@ Mutt adds some other modifiers to format strings. If you use an equals
 symbol (<literal>=</literal>) as a numeric prefix (like the minus
 above), it will force the string to be centered within its minimum space
 range. For example, <literal>%=14y</literal> will reserve 14 characters
-for the %y expansion &mdash; that's the X-Label: header, in <link
-linkend="index-format">$index_format</link>. If the expansion results in
+for the %y expansion &mdash; that's the set of message keywords (formerly
+X-Label).  If the expansion results in
 a string less than 14 characters, it will be centered in a 14-character
 space.  If the X-Label for a message were <quote>test</quote>, that
 expansion would look like
@@ -5803,7 +6195,7 @@ shows several ways to select messages.
 <row><entry>~V</entry><entry>cryptographically verified messages</entry></row>
 <row><entry>~x <emphasis>EXPR</emphasis></entry><entry>messages which contain <emphasis>EXPR</emphasis> in the <quote>References</quote> or <quote>In-Reply-To</quote> field</entry></row>
 <row><entry>~X [<emphasis>MIN</emphasis>]-[<emphasis>MAX</emphasis>]</entry><entry>messages with <emphasis>MIN</emphasis> to <emphasis>MAX</emphasis> attachments *)</entry></row>
-<row><entry>~y <emphasis>EXPR</emphasis></entry><entry>messages which contain <emphasis>EXPR</emphasis> in the <quote>X-Label</quote> field</entry></row>
+<row><entry>~y <emphasis>EXPR</emphasis></entry><entry>messages which contain <emphasis>EXPR</emphasis> in their keywords</entry></row>
 <row><entry>~z [<emphasis>MIN</emphasis>]-[<emphasis>MAX</emphasis>]</entry><entry>messages with a size in the range <emphasis>MIN</emphasis> to <emphasis>MAX</emphasis> *) **)</entry></row>
 <row><entry>~=</entry><entry>duplicated messages (see <link linkend="duplicate-threads">$duplicate_threads</link>)</entry></row>
 <row><entry>~$</entry><entry>unreferenced messages (requires threaded view)</entry></row>
@@ -6198,7 +6590,19 @@ option/command.  See:
 
 <listitem>
 <para>
+<link linkend="append-hook"><command>append-hook</command></link>
+</para>
+</listitem>
+
+<listitem>
+<para>
 <link linkend="charset-hook"><command>charset-hook</command></link>
+</para>
+</listitem>
+
+<listitem>
+<para>
+<link linkend="close-hook"><command>close-hook</command></link>
 </para>
 </listitem>
 
@@ -6241,6 +6645,12 @@ option/command.  See:
 <listitem>
 <para>
 <link linkend="message-hook"><command>message-hook</command></link>
+</para>
+</listitem>
+
+<listitem>
+<para>
+<link linkend="open-hook"><command>open-hook</command></link>
 </para>
 </listitem>
 
@@ -6655,18 +7065,6 @@ field.  When set to <emphasis>yes</emphasis>, the
 </para>
 
 <para>
-The <quote>X-Label:</quote> header field can be used to further identify
-mailing lists or list subject matter (or just to annotate messages
-individually).  The <link linkend="index-format">$index_format</link>
-variable's <quote>%y</quote> and <quote>%Y</quote> expandos can be used
-to expand <quote>X-Label:</quote> fields in the index, and Mutt's
-pattern-matcher can match regular expressions to <quote>X-Label:</quote>
-fields with the <quote>~y</quote> selector.  <quote>X-Label:</quote> is
-not a standard message header field, but it can easily be inserted by
-procmail and other mail filtering agents.
-</para>
-
-<para>
 Lastly, Mutt has the ability to <link linkend="sort">sort</link> the
 mailbox into <link linkend="threads">threads</link>.  A thread is a
 group of messages which all relate to the same subject.  This is usually
@@ -6675,6 +7073,121 @@ replies are represented graphically.  If you've ever used a threaded
 news client, this is the same concept.  It makes dealing with large
 volume mailing lists easier because you can easily delete uninteresting
 threads and quickly find topics of value.
+</para>
+
+</sect1>
+
+<sect1 id="using-keywords">
+<title>Keyword Management</title>
+
+<para>
+Mutt has supported textual labels (usually known as X-Labels after
+the header that we use to store them) for many years.  Since we
+initially added support for X-Lanels, however, the larger community
+has evolved more common ways of using and managing such labels, often
+known as <quote>keywords</quote> or <quote>tags</quote>.
+</para>
+
+<para>
+If you are new to Mutt or to using keywords in Mutt, you only need
+to know that the &lt;edit-label&gt; binding (<literal>y</literal> by
+default) will edit keywords, and that you can search for keywords
+using the <literal>~y</literal> pattern, and use the <literal>%y</literal>
+expando to display it in your <literal>$index_format</literal>.  You also
+can sort by keyword.  Keywords that you set will be stored to the
+<literal>X-Label:</literal> header by default.
+</para>
+
+<para>
+If you've been using X-Labels for a while, things have grown slightly.
+Mutt still supports X-Labels much as it has since 2000, but the scope
+of this support has expanded to support three additional header-based
+techniques for storing keyword metadata on messages:
+</para>
+
+<variablelist>
+
+<varlistentry>
+<term>X-Keywords</term>
+<listitem>
+<para>
+Informal design; space-delimited keywords
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>X-Mozilla-Keys</term>
+<listitem>
+<para>
+Informal design used by Mozilla-based agents; space-delimited keywords
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>Keywords</term>
+<listitem>
+<para>
+Standardized in RFC2822 (2001); comma-space-delimited keywords
+</para>
+</listitem>
+</varlistentry>
+
+<varlistentry>
+<term>X-Label</term>
+<listitem>
+<para>
+Mutt-specific design; freeform text (but see <link linkend="xlabel-delimiter">$xlabel_delimiter</link>)
+</para>
+</listitem>
+</varlistentry>
+
+</variablelist>
+
+<para>
+With X-Label, mutt's only notion of a message keyword was the literal
+string value of the X-Label header.  Under the new, integrated support,
+each message may have a list of distinct message keywords.  When reading
+keywords from one of the headers in the list above, the header value is
+split on the indicated delimiter (space or comma-space) for X-Keywords:,
+X-Mozilla-Keys:, and Keywords:.  By default, X-Label: is parsed as a
+single keyword.  By setting $xlabel_delimiter, you can force splitting
+of X-Label: as well.
+</para>
+
+<para>
+Two boolean variables control how keywords are saved when writing
+messages to a mailbox.  The default settings preserve backward
+compatibility within mutt completely, but by changing these
+values you can transition to more standard keyword storage. <link
+linkend="keywords-legacy">$keywords_legacy</link>, if set, will tell
+mutt to use only "legacy" headers -- i.e., <literal>X-Keywords:</literal>,
+<literal>X-Mozilla-Keys</literal>, <literal>Keywords</literal>, or
+<literal>X-Label:</literal>.  Keywords will be saved to whichever
+header was in use by the message the keyword was read from.  If
+<link linkend="keywords-standard">$keywords_standard</link> is
+set, keywords will be saved without exception to the standard
+<literal>Keywords:</literal> header.  (If both are set, both will be used;
+if both are unset, legacy headers are used.)  Additionally, <link
+linkend="xlabel-delimiter">$xlabel_delimiter</link> is used to format
+the X-Label: header on saves.
+</para>
+
+<para>
+To migrate completely to the new standard,
+unset <literal>$keywords_legacy</literal> and set
+<literal>$keywords_standard</literal>, and set
+<literal>$xlabel_delimiter</literal> either to what you currently use to
+delimit keywords in X-Labels, or to <quote>,&nbsp;</quote> (comma
+space).
+</para>
+
+<para>
+Note that it is common practice to insert <literal>X-Label:</literal> or
+other keyword headers from proxmail or other mail filters.  This is
+a useful trick for categorizing messages en masse as they are delivered
+to your inbox, and it is fully compatible with the new keywords code.
 </para>
 
 </sect1>
@@ -7450,6 +7963,17 @@ to display the results.
 </para>
 
 <para>
+Mutt will set the <literal>COLUMNS</literal> environment variable to
+the width of the pager.  Some programs make use of this environment
+variable automatically.  Others provide a command line argument that
+can use this to set the output width:
+</para>
+
+<screen>
+text/html; lynx -dump -width ${COLUMNS:-80} %s; copiousoutput
+</screen>
+
+<para>
 Note that when using the built-in pager, <emphasis>only</emphasis>
 entries with this flag will be considered a handler for a MIME type
 &mdash; all other entries will be ignored.
@@ -8150,7 +8674,7 @@ would contain:
 Mutt may also be <quote>patched</quote> to support smaller features.
 These patches should add a free-form string to the end Mutt's version string.
 Running <literal>mutt -v</literal> might show:
-<screen>patch-1.5.24.sidebar.20151111</screen>
+<screen>patch-1.6.1.sidebar.20160502</screen>
 </para>
 </sect2>
 
@@ -8783,7 +9307,7 @@ please have a look at the mixmaster documentation.
 
 		<itemizedlist>
 			<title>Dependencies:</title>
-			<listitem><para>mutt-1.5.24</para></listitem>
+			<listitem><para>mutt-1.6.1</para></listitem>
 		</itemizedlist>
 
 		<para>This patch is part of the <ulink url="http://www.neomutt.org/">NeoMutt Project</ulink>.</para>
@@ -8903,7 +9427,7 @@ bind index,pager Q quasi-delete
 
 		<itemizedlist>
 			<title>Dependencies:</title>
-			<listitem><para>mutt-1.5.24</para></listitem>
+			<listitem><para>mutt-1.6.1</para></listitem>
 		</itemizedlist>
 
 		<para>This patch is part of the <ulink url="http://www.neomutt.org/">NeoMutt Project</ulink>.</para>
@@ -9022,7 +9546,7 @@ color progress white red
 
 		<itemizedlist>
 			<title>Dependencies:</title>
-			<listitem><para>mutt-1.5.24</para></listitem>
+			<listitem><para>mutt-1.6.1</para></listitem>
 		</itemizedlist>
 
 		<para>This patch is part of the <ulink url="http://www.neomutt.org/">NeoMutt Project</ulink>.</para>
@@ -9225,7 +9749,7 @@ color status brightwhite default 'Mutt: ([^ ]+)' 1
 
 		<itemizedlist>
 			<title>Dependencies:</title>
-			<listitem><para>mutt-1.5.24</para></listitem>
+			<listitem><para>mutt-1.6.1</para></listitem>
 			<listitem><para><link linkend="status-color">status-color patch</link></para></listitem>
 		</itemizedlist>
 
@@ -9451,7 +9975,7 @@ color index_size cyan default
 
 		<itemizedlist>
 			<title>Dependencies:</title>
-			<listitem><para>mutt-1.5.24</para></listitem>
+			<listitem><para>mutt-1.6.1</para></listitem>
 		</itemizedlist>
 
 		<para>This patch is part of the <ulink url="http://www.neomutt.org/">NeoMutt Project</ulink>.</para>
@@ -9667,7 +10191,7 @@ set index_format='%4C %Z %{%b %d} %-25.25n %&lt;M?[%M] %s&amp;%s%* %&lt;l?%l&amp
 
 		<itemizedlist>
 			<title>Dependencies:</title>
-			<listitem><para>mutt-1.5.24</para></listitem>
+			<listitem><para>mutt-1.6.1</para></listitem>
 			<listitem><para><link linkend="nested-if">nested-if patch</link></para></listitem>
 		</itemizedlist>
 
@@ -10074,7 +10598,7 @@ set index_format='%4C %Z %&lt;[y?%&lt;[m?%&lt;[d?%[%H:%M ]&amp;%[%a %d]&gt;&amp;
 
 		<itemizedlist>
 			<title>Dependencies:</title>
-			<listitem><para>mutt-1.5.24</para></listitem>
+			<listitem><para>mutt-1.6.1</para></listitem>
 			<listitem><para>OpenSSL</para></listitem>
 		</itemizedlist>
 
@@ -10181,7 +10705,7 @@ openssl s_client -host &lt;imap server&gt; -port &lt;port&gt; -tls1 -servername 
 
 		<itemizedlist>
 			<title>Dependencies:</title>
-			<listitem><para>mutt-1.5.24</para></listitem>
+			<listitem><para>mutt-1.6.1</para></listitem>
 		</itemizedlist>
 
 		<para>This patch is part of the <ulink url="http://www.neomutt.org/">NeoMutt Project</ulink>.</para>
@@ -10644,7 +11168,7 @@ color sidebar_new green black
 
 		<itemizedlist>
 			<title>Dependencies:</title>
-			<listitem><para>mutt-1.5.24</para></listitem>
+			<listitem><para>mutt-1.6.1</para></listitem>
 		</itemizedlist>
 
 		<para>This patch is part of the <ulink url="http://www.neomutt.org/">NeoMutt Project</ulink>.</para>
@@ -10805,7 +11329,7 @@ ifndef USE_SIDEBAR finish
 
 		<itemizedlist>
 			<title>Dependencies:</title>
-			<listitem><para>mutt-1.5.24</para></listitem>
+			<listitem><para>mutt-1.6.1</para></listitem>
 			<listitem><para><literal>open_memstream()</literal>, <literal>fmemopen()</literal> from glibc</para></listitem>
 		</itemizedlist>
 
@@ -10908,7 +11432,7 @@ ifndef USE_SIDEBAR finish
 
 		<itemizedlist>
 			<title>Dependencies:</title>
-			<listitem><para>mutt-1.5.24</para></listitem>
+			<listitem><para>mutt-1.6.1</para></listitem>
 		</itemizedlist>
 
 		<para>This patch is part of the <ulink url="http://www.neomutt.org/">NeoMutt Project</ulink>.</para>
@@ -11036,7 +11560,7 @@ set index_format='%4C %Z %{%b %d} %I (%?l?%4l&amp;%4c?) %s'
 
 		<itemizedlist>
 			<title>Dependencies:</title>
-			<listitem><para>mutt-1.5.24</para></listitem>
+			<listitem><para>mutt-1.6.1</para></listitem>
 			<listitem><para>IMAP support</para></listitem>
 		</itemizedlist>
 
@@ -11203,7 +11727,7 @@ bind index D purge-message
 
 		<itemizedlist>
 			<title>Dependencies:</title>
-			<listitem><para>mutt-1.5.24</para></listitem>
+			<listitem><para>mutt-1.6.1</para></listitem>
 		</itemizedlist>
 
 		<para>This patch is part of the <ulink url="http://www.neomutt.org/">NeoMutt Project</ulink>.</para>
@@ -11322,7 +11846,7 @@ bind index &lt;esc&gt;L limit-current-thread
 
 		<itemizedlist>
 			<title>Dependencies:</title>
-			<listitem><para>mutt-1.5.24</para></listitem>
+			<listitem><para>mutt-1.6.1</para></listitem>
 		</itemizedlist>
 
 		<para>This patch is part of the <ulink url="http://www.neomutt.org/">NeoMutt Project</ulink>.</para>
@@ -11423,6 +11947,829 @@ set skip_quoted_offset = 3
 		<title>Credits</title>
 		<itemizedlist>
 		<listitem><para>David Sterba <email>dsterba@suse.cz</email></para></listitem>
+		<listitem><para>Richard Russon <email>rich@flatcap.org</email></para></listitem>
+		</itemizedlist>
+	</sect2>
+</sect1>
+
+<sect1 id="compress">
+	<title>Compressed Folders Patch</title>
+	<subtitle>Read from/write to compressed mailboxes</subtitle>
+
+	<sect2 id="compress-patch">
+		<title>Patch</title>
+
+		<para>
+			To check if Mutt supports <quote>Compress Folders</quote>, look for
+			<quote>+USE_COMPRESSED</quote> in the mutt version.
+			See: <xref linkend="compile-time-features"/>.
+		</para>
+
+		<itemizedlist>
+			<title>Dependencies:</title>
+			<listitem><para>mutt-1.5.24</para></listitem>
+		</itemizedlist>
+
+		<para>This patch is part of the <ulink url="https://github.com/neomutt/neomutt/wiki">NeoMutt Project</ulink>.</para>
+	</sect2>
+
+	<sect2 id="compress-intro">
+		<title>Introduction</title>
+
+		<para>
+			The Compressed Folder patch allows Mutt to read mailbox files that are
+			compressed.  But it isn't limited to compressed files.  It works well
+			with encrypted files, too.  In fact, if you can create a program/script
+			to convert to and from your format, then Mutt can read it.
+		</para>
+
+		<para>
+			The patch adds three hooks to Mutt: <literal>open-hook</literal>,
+			<literal>close-hook</literal> and <literal>append-hook</literal>.  They
+			define commands to: uncompress a file; compress a file; append
+			messages to an already compressed file.
+		</para>
+
+		<para>
+			There are some examples of both compressed and encrypted files,
+			later.  For now, the documentation will just concentrate on
+			compressed files.
+		</para>
+
+	</sect2>
+
+<!--
+	<sect2 id="compress-variables">
+		<title>Variables</title>
+		<para>None</para>
+	</sect2>
+
+	<sect2 id="compress-functions">
+		<title>Functions</title>
+		<para>None</para>
+	</sect2>
+-->
+
+	<sect2 id="compress-commands">
+		<title>Commands</title>
+		<cmdsynopsis>
+			<command>open-hook</command>
+			<arg choice="plain">
+				<replaceable class="parameter">pattern</replaceable>
+			</arg>
+			<arg choice="plain">
+				<replaceable class="parameter">shell-command</replaceable>
+			</arg>
+			<command>close-hook</command>
+			<arg choice="plain">
+				<replaceable class="parameter">pattern</replaceable>
+			</arg>
+			<arg choice="plain">
+				<replaceable class="parameter">shell-command</replaceable>
+			</arg>
+			<command>append-hook</command>
+			<arg choice="plain">
+				<replaceable class="parameter">pattern</replaceable>
+			</arg>
+			<arg choice="plain">
+				<replaceable class="parameter">shell-command</replaceable>
+			</arg>
+		</cmdsynopsis>
+
+		<para>
+			The shell-command must contain two placeholders for filenames:
+			<literal>%f</literal> and <literal>%t</literal>.  These represent
+			<quote>from</quote> and <quote>to</quote> filenames.  It's a good idea to
+			put quotes around these placeholders.
+		</para>
+
+		<para>
+			If you need the exact string <quote>%f</quote> or <quote>%t</quote> in your
+			command, simply double up the <quote>%</quote> character, e.g.
+			<quote>%%f</quote> or <quote>%%t</quote>.
+		</para>
+
+		<table id="table-compress-optional">
+			<title>Not all Hooks are Required</title>
+			<tgroup cols="5">
+				<thead>
+					<row>
+						<entry>Open</entry>
+						<entry>Close</entry>
+						<entry>Append</entry>
+						<entry>Effect</entry>
+						<entry>Useful if</entry>
+					</row>
+				</thead>
+				<tbody>
+					<row>
+						<entry>Open</entry>
+						<entry>-</entry>
+						<entry>-</entry>
+						<entry>Folder is readonly</entry>
+						<entry>The folder is just a backup</entry>
+					</row>
+					<row>
+						<entry>Open</entry>
+						<entry>Close</entry>
+						<entry>-</entry>
+						<entry>Folder is read/write, but the entire folder must be
+							written if anything is changed</entry>
+						<entry>Your compression format doesn't support appending</entry>
+					</row>
+					<row>
+						<entry>Open</entry>
+						<entry>Close</entry>
+						<entry>Append</entry>
+						<entry>Folder is read/write and emails can be efficiently added
+							to the end</entry>
+						<entry>Your compression format supports appending</entry>
+					</row>
+					<row>
+						<entry>Open</entry>
+						<entry>-</entry>
+						<entry>Append</entry>
+						<entry>Folder is readonly, but can be appended to</entry>
+						<entry>You want to store emails, but never change them</entry>
+					</row>
+				</tbody>
+			</tgroup>
+		</table>
+
+		<note>
+			The command:
+			<itemizedlist>
+				<listitem><para>should return a non-zero exit status on failure</para></listitem>
+				<listitem><para>should not delete any files</para></listitem>
+			</itemizedlist>
+		</note>
+
+		<sect3 id="open-hook">
+			<title>Read from compressed mailbox</title>
+
+			<screen>open-hook regexp shell-command</screen>
+
+			<para>
+				If Mutt is unable to open a file, it then looks for
+				<literal>open-hook</literal> that matches the filename.
+			</para>
+
+			<para>
+				If your compression program doesn't have a well-defined extension,
+				then you can use <literal>.</literal> as the regexp.
+			</para>
+
+			<sect4 id="compress-open-hook-example">
+				<title>Example of open-hook</title>
+
+				<screen>open-hook '\.gz$' &quot;gzip -cd '%f' &gt; '%t'&quot;</screen>
+
+				<itemizedlist>
+					<listitem><para>Mutt finds a file, <quote>example.gz</quote>,
+							that it can't read</para></listitem>
+					<listitem><para>Mutt has an <literal>open-hook</literal>
+							whose regexp matches the filename:
+							<literal>\.gz$</literal></para></listitem>
+					<listitem><para>Mutt uses the command <literal>gzip -cd</literal>
+							to create a temporary file that it <emphasis>can</emphasis>
+							read</para></listitem>
+				</itemizedlist>
+			</sect4>
+		</sect3>
+
+		<sect3 id="close-hook">
+			<title>Write to a compressed mailbox</title>
+
+			<screen>close-hook regexp shell-command</screen>
+
+			<para>
+				When Mutt has finished with a compressed mail folder, it will look
+				for a matching <literal>close-hook</literal> to recompress the file.
+				This hook is <link linkend="table-compress-optional">optional</link>.
+			</para>
+
+			<note>
+				If the folder has not been modifed, the
+				<literal>close-hook</literal> will not be called.
+			</note>
+
+			<sect4 id="compress-close-hook-example">
+				<title>Example of close-hook</title>
+
+				<screen>close-hook '\.gz$' &quot;gzip -c '%t' &gt; '%f'&quot;</screen>
+
+				<itemizedlist>
+					<listitem><para>Mutt has finished with a folder, <quote>example.gz</quote>,
+							that it opened with <literal>open-hook</literal></para></listitem>
+					<listitem><para>The folder has been modified</para></listitem>
+					<listitem><para>Mutt has a <literal>close-hook</literal> whose regexp
+							matches the filename: <literal>\.gz$</literal></para></listitem>
+					<listitem><para>Mutt uses the command <literal>gzip -c</literal>
+							to create a new compressed file</para></listitem>
+				</itemizedlist>
+			</sect4>
+		</sect3>
+
+		<sect3 id="append-hook">
+			<title>Append to a compressed mailbox</title>
+
+			<screen>append-hook regexp shell-command</screen>
+
+			<para>
+				When Mutt wants to append an email to a compressed mail folder, it
+				will look for a matching <literal>append-hook</literal>.
+				This hook is <link linkend="table-compress-optional">optional</link>.
+			</para>
+
+			<para>
+				Using the <literal>append-hook</literal> will save time, but
+				Mutt won't be able to determine the type of the mail folder
+				inside the compressed file.
+			</para>
+
+			<para>
+				Mutt will <emphasis>assume</emphasis> the type to be that of
+				the <literal>$mbox_type</literal> variable.  Mutt also uses
+				this type for temporary files.
+			</para>
+
+			<para>
+				Mutt will only use the <literal>append-hook</literal> for existing files.
+				The <literal>close-hook</literal> will be used for empty, or missing files.
+			</para>
+
+			<sect4 id="compress-append-hook-example">
+				<title>Example of append-hook</title>
+
+				<screen>append-hook '\.gz$' &quot;gzip -c '%t' &gt;&gt; '%f'&quot;</screen>
+
+				<itemizedlist>
+					<listitem><para>Mutt wants to append an email to a folder, <quote>example.gz</quote>,
+							that it opened with <literal>open-hook</literal></para></listitem>
+					<listitem><para>Mutt has an <literal>append-hook</literal> whose regexp matches
+							the filename: <literal>\.gz$</literal></para></listitem>
+					<listitem><para>Mutt knows the mailbox type from the <literal>$mbox</literal>
+							variable</para></listitem>
+					<listitem><para>Mutt uses the command <literal>gzip -c</literal>
+							to append to an existing compressed file</para></listitem>
+				</itemizedlist>
+			</sect4>
+
+		</sect3>
+
+		<sect3 id="compress-empty">
+			<title>Empty Files</title>
+
+			<para>
+				Mutt assumes that an empty file is not compressed.  In this
+				situation, unset <link linkend="save-empty">$save_empty</link>, so
+				that the compressed file will be removed if you delete all of the
+				messages.
+			</para>
+		</sect3>
+
+		<sect3 id="compress-security">
+			<title>Security</title>
+
+			<para>
+				Encrypted files are decrypted into temporary files which are
+				stored in the <link linkend="tmpdir">$tmpdir</link> directory.
+				This could be a security risk.
+			</para>
+		</sect3>
+	</sect2>
+
+<!--
+	<sect2 id="compress-colors">
+		<title>Colors</title>
+		<para>None</para>
+	</sect2>
+
+	<sect2 id="compress-sort">
+		<title>Sort</title>
+		<para>None</para>
+	</sect2>
+-->
+
+	<sect2 id="compress-muttrc">
+		<title>Muttrc</title>
+<screen>
+<emphasis role="comment"># Example Mutt config file for the 'compressed folders' feature.
+ 
+# This feature adds three hooks to Mutt which allow it to
+# work with compressed, or encrypted, mailboxes.
+ 
+# The hooks are of the form:
+#       open-hook   regexp &quot;shell-command&quot;
+#       close-hook  regexp &quot;shell-command&quot;
+#       append-hook regexp &quot;shell-command&quot;
+ 
+# The 'append-hook' is optional.
+ 
+# Hander for gzip compressed mailboxes</emphasis>
+open-hook   '\.gz$'  &quot;gzip -cd  '%f' &gt;  '%t'&quot;
+close-hook  '\.gz$'  &quot;gzip -c   '%t' &gt;  '%f'&quot;
+append-hook '\.gz$'  &quot;gzip -c   '%t' &gt;&gt; '%f'&quot;
+ 
+<emphasis role="comment"># Hander for bzip2 compressed mailboxes</emphasis>
+open-hook   '\.bz2$' &quot;bzip2 -cd '%f' &gt;  '%t'&quot;
+close-hook  '\.bz2$' &quot;bzip2 -c  '%t' &gt;  '%f'&quot;
+append-hook '\.bz2$' &quot;bzip2 -c  '%t' &gt;&gt; '%f'&quot;
+ 
+<emphasis role="comment"># Hander for xz compressed mailboxes</emphasis>
+open-hook   '\.xz$'  &quot;xz    -cd '%f' &gt;  '%t'&quot;
+close-hook  '\.xz$'  &quot;xz    -c  '%t' &gt;  '%f'&quot;
+append-hook '\.xz$'  &quot;xz    -c  '%t' &gt;&gt; '%f'&quot;
+ 
+<emphasis role="comment"># Hander for pgp encrypted mailboxes
+# PGP does not support appending to an encrypted file</emphasis>
+open-hook   '\.pgp$' &quot;pgp -f &lt; '%f' &gt; '%t'&quot;
+close-hook  '\.pgp$' &quot;pgp -fe YourPgpUserIdOrKeyId &lt; '%t' &gt; '%f'&quot;
+ 
+<emphasis role="comment"># Hander for gpg encrypted mailboxes
+# gpg does not support appending to an encrypted file</emphasis>
+open-hook   '\.gpg$' &quot;gpg --decrypt &lt; '%f' &gt; '%t'&quot;
+close-hook  '\.gpg$' &quot;gpg --encrypt --recipient YourGpgUserIdOrKeyId &lt; '%t' &gt; '%f'&quot;
+ 
+<emphasis role="comment"># vim: syntax=muttrc</emphasis>
+</screen>
+	</sect2>
+
+	<sect2 id="compress-see-also">
+		<title>See Also</title>
+
+		<itemizedlist>
+			<listitem><para><ulink url="https://github.com/neomutt/neomutt/wiki">NeoMutt Project</ulink></para></listitem>
+			<listitem><para><link linkend="compile-time-features">Compile-Time Features</link></para></listitem>
+			<listitem><para><link linkend="regexp">Regular Expressions</link></para></listitem>
+			<listitem><para><link linkend="tmpdir">$tmpdir</link></para></listitem>
+			<listitem><para><link linkend="mbox-type">$mbox_type</link></para></listitem>
+			<listitem><para><link linkend="save-empty">$save_empty</link></para></listitem>
+			<listitem><para><link linkend="folder-hook">folder-hook</link></para></listitem>
+		</itemizedlist>
+	</sect2>
+
+	<sect2 id="compress-known-bugs">
+		<title>Known Bugs</title>
+
+		<itemizedlist>
+			<listitem><para>The Compressed Folder hooks cannot deal with filenames that contains quotes/apostrophes.</para></listitem>
+		</itemizedlist>
+	</sect2>
+
+	<sect2 id="compress-credits">
+		<title>Credits</title>
+		<itemizedlist>
+		<listitem><para>Roland Rosenfeld <email>roland@spinnaker.de</email></para></listitem>
+		<listitem><para>Alain Penders <email>Alain@Finale-Dev.com</email></para></listitem>
+		<listitem><para>Christoph <quote>Myon</quote> Berg <email>myon@debian.org</email></para></listitem>
+		<listitem><para>Evgeni Golov <email>evgeni@debian.org</email></para></listitem>
+		<listitem><para>Richard Russon <email>rich@flatcap.org</email></para></listitem>
+		</itemizedlist>
+	</sect2>
+</sect1>
+
+<sect1 id="keywords">
+	<title>Keywords Patch</title>
+	<subtitle>Labels/Tagging for emails</subtitle>
+
+	<sect2 id="keywords-patch">
+		<title>Patch</title>
+
+		<para>
+			To check if Mutt supports <quote>Keywords</quote>, look for
+			<quote>patch-keywords</quote> in the mutt version.
+			See: <xref linkend="mutt-patches"/>.
+		</para>
+
+		<itemizedlist>
+			<title>Dependencies:</title>
+			<listitem><para>mutt-1.5.24</para></listitem>
+		</itemizedlist>
+
+		<para>This patch is part of the <ulink url="https://github.com/neomutt/neomutt/wiki">NeoMutt Project</ulink>.</para>
+	</sect2>
+
+	<sect2 id="keywords-intro">
+		<title>Introduction</title>
+
+		<para>
+		Unify label/keyword handling.
+		</para>
+
+		<para>
+		Since x-labels were added to mutt in 2000, a number of other approaches
+		to what we now call <quote>tagging</quote> have also emerged.
+		One of them was even made standard in RFC 2822.
+		This update unifies the handling of all these strategies.
+		</para>
+
+		<para>
+		We start by changing mutt's internal keyword storage from a single
+		string which may contain whitespace to a list of discrete keywords.
+		This has advantages for keyword completion as well as for portabilty
+		among varying "standards" for keyword storage.  This may represent
+		a significant change for existing mutt users who have set x-labels
+		containing spaces, and should be regarded with suspicion.  The
+		advantages are significant, though.
+		</para>
+
+		<para>
+		Next we allow mutt to parse keywords into this internal list from
+		any of the following headers: X-Label (freeform), X-Keywords
+		(space-delimited), X-Mozilla-Keys (space-delimited), and Keywords (RFC
+		2822, comma-space-delimited).  Mutt remembers which headers it sourced
+		keywords from, and can rewrite those headers when saving messages for
+		compatibility with the mailer of origin.
+		</para>
+
+		<para>
+		(X-Label was specified as freeform text by mutt, its only known
+		implementation.  X-Labels have been used both as a
+		<quote>tagging</quote> device, probably with space delimiting, and as a
+		<quote>memo</quote> field, where space-delimited parsing would ruin the
+		semantics of the memo.  By default mutt will not split X-Labels at all.
+		Set $xlabel_delimiter if your needs vary.)
+		</para>
+
+		<para>
+		Finally we add two booleans: $keywords_legacy=true and
+		$keywords_standard=FALSE.  When $keywords_legacy is true, mutt will
+		always save keyword to whatever original header it came from.  When
+		$keywords_standard=true, mutt will save to the Keywords: header.  If
+		both are true mutt saves to both; if neither is true, mutt saves only
+		to legacy headers to avoid complete loss of keywords.
+		</para>
+
+		<para>
+		Overall this represents convergence path for all competing
+		labelling/tagging/keywording systems toward one that is specified by
+		RFC.
+		</para>
+
+		<para>
+		You can change or delete the X-Label: field within
+		Mutt using the edit-label command, bound to the
+		y key by default.  This works for tagged messages, too.
+		</para>
+	</sect2>
+
+	<sect2 id="keywords-variables">
+		<title>Variables</title>
+
+		<table id="table-keywords-variables">
+			<title>Keywords Variables</title>
+			<tgroup cols="3">
+				<thead>
+					<row>
+						<entry>Name</entry>
+						<entry>Type</entry>
+						<entry>Default</entry>
+					</row>
+				</thead>
+				<tbody>
+					<row>
+						<entry><literal>keywords_legacy</literal></entry>
+						<entry>boolean</entry>
+						<entry><literal>yes</literal></entry>
+					</row>
+					<row>
+						<entry><literal>keywords_standard</literal></entry>
+						<entry>boolean</entry>
+						<entry><literal>no</literal></entry>
+					</row>
+					<row>
+						<entry><literal>xlabel_delimiter</literal></entry>
+						<entry>string</entry>
+						<entry>(empty)</entry>
+					</row>
+				</tbody>
+			</tgroup>
+		</table>
+	</sect2>
+
+	<sect2 id="keywords-functions">
+		<title>Functions</title>
+
+		<table id="table-keywords-funcions">
+			<title>Keyword Functions</title>
+			<tgroup cols="4">
+				<thead>
+					<row>
+						<entry>Menus</entry>
+						<entry>Default Key</entry>
+						<entry>Function</entry>
+						<entry>Description</entry>
+					</row>
+				</thead>
+				<tbody>
+					<row>
+						<entry>index,pager</entry>
+						<entry>y</entry>
+						<entry><literal>&lt;edit-label&gt;</literal></entry>
+						<entry>add, change, or delete a message's label</entry>
+					</row>
+				</tbody>
+			</tgroup>
+		</table>
+	</sect2>
+
+<!--
+	<sect2 id="keywords-commands">
+		<title>Commands</title>
+	</sect2>
+
+	<sect2 id="keywords-colors">
+		<title>Colors</title>
+		<para>None</para>
+	</sect2>
+-->
+
+	<sect2 id="keywords-sort">
+		<title>Sort</title>
+		<table id="table-keywords-sort">
+			<title>Keywords Sort</title>
+			<tgroup cols="2">
+				<thead>
+					<row>
+						<entry>Sort</entry>
+						<entry>Description</entry>
+					</row>
+				</thead>
+				<tbody>
+					<row>
+						<entry><literal>label</literal></entry>
+						<entry>Sort by label</entry>
+					</row>
+				</tbody>
+			</tgroup>
+		</table>
+	</sect2>
+
+	<sect2 id="keywords-muttrc">
+		<title>Muttrc</title>
+	</sect2>
+
+	<sect2 id="keywords-see-also">
+		<title>See Also</title>
+
+		<itemizedlist>
+			<listitem><para><ulink url="https://github.com/neomutt/neomutt/wiki">NeoMutt Project</ulink></para></listitem>
+			<listitem><para><link linkend="index-format">$index_format</link></para></listitem>
+			<listitem><para><link linkend="index-color">index-color patch</link></para></listitem>
+			<listitem><para><link linkend="folder-hook">folder-hook</link></para></listitem>
+		</itemizedlist>
+	</sect2>
+
+	<sect2 id="keywords-known-bugs">
+		<title>Known Bugs</title>
+	</sect2>
+
+	<sect2 id="keywords-credits">
+		<title>Credits</title>
+		<itemizedlist>
+		<listitem><para>David Champion <email>dgc@uchicago.edu</email></para></listitem>
+		<listitem><para>Richard Russon <email>rich@flatcap.org</email></para></listitem>
+		</itemizedlist>
+	</sect2>
+</sect1>
+
+<sect1 id="nntp">
+	<title>NNTP Patch</title>
+	<subtitle>Talk to a Usenet news server</subtitle>
+
+	<sect2 id="nntp-patch">
+		<title>Patch</title>
+
+		<para>
+			To check if Mutt supports <quote>NNTP</quote>, look for
+			<quote>+USE_NNTP</quote> in the mutt version.
+			See: <xref linkend="compile-time-features"/>.
+		</para>
+
+		<itemizedlist>
+			<title>Patch Dependencies:</title>
+			<listitem><para>mutt-1.5.24</para></listitem>
+		</itemizedlist>
+
+		<para>This patch is part of the <link linkend="neomutt">NeoMutt project</link>.</para>
+	</sect2>
+
+	<sect2 id="nntp-intro">
+		<title>Introduction</title>
+	</sect2>
+
+	<sect2 id="nntp-variables">
+		<title>Variables</title>
+	</sect2>
+
+	<sect2 id="nntp-functions">
+		<title>Functions</title>
+
+		<table id="table-nntp-functions">
+			<title>NNTP Functions</title>
+			<tgroup cols="4">
+				<thead>
+					<row>
+						<entry>Menus</entry>
+						<entry>Default Key</entry>
+						<entry>Function</entry>
+						<entry>Description</entry>
+					</row>
+				</thead>
+				<tbody>
+					<row>
+						<entry>browser,index</entry>
+						<entry>y</entry>
+						<entry><literal>&lt;catchup&gt;</literal></entry>
+						<entry>mark all articles in newsgroup as read</entry>
+					</row>
+					<row>
+						<entry>index,pager</entry>
+						<entry>i</entry>
+						<entry><literal>&lt;change-newsgroup&gt;</literal></entry>
+						<entry>open a different newsgroup</entry>
+					</row>
+					<row>
+						<entry>pager</entry>
+						<entry>X</entry>
+						<entry><literal>&lt;change-vfolder&gt;</literal></entry>
+						<entry>open a different virtual folder</entry>
+					</row>
+					<row>
+						<entry>compose</entry>
+						<entry>o</entry>
+						<entry><literal>&lt;edit-followup-to&gt;</literal></entry>
+						<entry>edit the Followup-To field</entry>
+					</row>
+					<row>
+						<entry>compose</entry>
+						<entry>N</entry>
+						<entry><literal>&lt;edit-newsgroups&gt;</literal></entry>
+						<entry>edit the newsgroups list</entry>
+					</row>
+					<row>
+						<entry>compose</entry>
+						<entry>x</entry>
+						<entry><literal>&lt;edit-x-comment-to&gt;</literal></entry>
+						<entry>edit the X-Comment-To field</entry>
+					</row>
+					<row>
+						<entry>pager</entry>
+						<entry>+</entry>
+						<entry><literal>&lt;entire-thread&gt;</literal></entry>
+						<entry>read entire thread of the current message</entry>
+					</row>
+					<row>
+						<entry>attachment,index,pager</entry>
+						<entry>F</entry>
+						<entry><literal>&lt;followup-message&gt;</literal></entry>
+						<entry>followup to newsgroup</entry>
+					</row>
+					<row>
+						<entry>pager</entry>
+						<entry>`</entry>
+						<entry><literal>&lt;modify-labels&gt;</literal></entry>
+						<entry>modify (notmuch) tags</entry>
+					</row>
+					<row>
+						<entry>index,pager</entry>
+						<entry>P</entry>
+						<entry><literal>&lt;post-message&gt;</literal></entry>
+						<entry>post message to newsgroup</entry>
+					</row>
+					<row>
+						<entry>browser</entry>
+						<entry>g</entry>
+						<entry><literal>&lt;reload-active&gt;</literal></entry>
+						<entry>load list of all newsgroups from NNTP server</entry>
+					</row>
+					<row>
+						<entry>browser</entry>
+						<entry>s</entry>
+						<entry><literal>&lt;subscribe&gt;</literal></entry>
+						<entry>subscribe to current mbox (IMAP/NNTP only)</entry>
+					</row>
+					<row>
+						<entry>browser</entry>
+						<entry>S</entry>
+						<entry><literal>&lt;subscribe-pattern&gt;</literal></entry>
+						<entry>subscribe to newsgroups matching a pattern</entry>
+					</row>
+					<row>
+						<entry>browser</entry>
+						<entry>Y</entry>
+						<entry><literal>&lt;uncatchup&gt;</literal></entry>
+						<entry>mark all articles in newsgroup as unread</entry>
+					</row>
+					<row>
+						<entry>browser</entry>
+						<entry>u</entry>
+						<entry><literal>&lt;unsubscribe&gt;</literal></entry>
+						<entry>unsubscribe from current mbox (IMAP/NNTP only)</entry>
+					</row>
+					<row>
+						<entry>browser</entry>
+						<entry>U</entry>
+						<entry><literal>&lt;unsubscribe-pattern&gt;</literal></entry>
+						<entry>unsubscribe from newsgroups matching a pattern</entry>
+					</row>
+					<row>
+						<entry>index,pager</entry>
+						<entry>Alt-i</entry>
+						<entry><literal>&lt;change-newsgroup-readonly&gt;</literal></entry>
+						<entry>open a different newsgroup in read only mode</entry>
+					</row>
+					<row>
+						<entry>attachment,index,pager</entry>
+						<entry>Alt-F</entry>
+						<entry><literal>&lt;forward-to-group&gt;</literal></entry>
+						<entry>forward to newsgroup</entry>
+					</row>
+					<row>
+						<entry>index</entry>
+						<entry>(none)</entry>
+						<entry><literal>&lt;get-children&gt;</literal></entry>
+						<entry>get all children of the current message</entry>
+					</row>
+					<row>
+						<entry>index</entry>
+						<entry>Alt-G</entry>
+						<entry><literal>&lt;get-parent&gt;</literal></entry>
+						<entry>get parent of the current message</entry>
+					</row>
+					<row>
+						<entry>index,pager</entry>
+						<entry>(none)</entry>
+						<entry><literal>&lt;imap-fetch-mail&gt;</literal></entry>
+						<entry>force retrieval of mail from IMAP server</entry>
+					</row>
+					<row>
+						<entry>index,pager</entry>
+						<entry>(none)</entry>
+						<entry><literal>&lt;imap-logout-all&gt;</literal></entry>
+						<entry>logout from all IMAP servers</entry>
+					</row>
+					<row>
+						<entry>pager</entry>
+						<entry>(none)</entry>
+						<entry><literal>&lt;modify-labels-then-hide&gt;</literal></entry>
+						<entry>modify labeld and then hide message</entry>
+					</row>
+					<row>
+						<entry>index</entry>
+						<entry>(none)</entry>
+						<entry><literal>&lt;reconstruct-thread&gt;</literal></entry>
+						<entry>reconstruct thread containing current message</entry>
+					</row>
+					<row>
+						<entry>pager</entry>
+						<entry>Alt-X</entry>
+						<entry><literal>&lt;vfolder-from-query&gt;</literal></entry>
+						<entry>generate virtual folder from query</entry>
+					</row>
+					<row>
+						<entry>index</entry>
+						<entry>Ctrl-G</entry>
+						<entry><literal>&lt;get-message&gt;</literal></entry>
+						<entry>get message with Message-Id</entry>
+					</row>
+				</tbody>
+			</tgroup>
+		</table>
+	</sect2>
+
+	<sect2 id="nntp-commands">
+		<title>Commands</title>
+	</sect2>
+
+	<sect2 id="nntp-colors">
+		<title>Colors</title>
+		<para>None</para>
+	</sect2>
+
+	<sect2 id="nntp-sort">
+		<title>Sort</title>
+		<para>None</para>
+	</sect2>
+
+	<sect2 id="nntp-muttrc">
+		<title>Muttrc</title>
+	</sect2>
+
+	<sect2 id="nntp-see-also">
+		<title>See Also</title>
+	</sect2>
+
+	<sect2 id="nntp-known-bugs">
+		<title>Known Bugs</title>
+	</sect2>
+
+	<sect2 id="nntp-credits">
+		<title>Credits</title>
+		<itemizedlist>
+		<listitem><para>Vsevolod Volkov <email>vvv@mutt.org.ua</email></para></listitem>
+		<listitem><para>Felix von Leitner <email>leitner@fefe.de</email></para></listitem>
 		<listitem><para>Richard Russon <email>rich@flatcap.org</email></para></listitem>
 		</itemizedlist>
 	</sect2>
@@ -11970,6 +13317,18 @@ The following are the commands understood by Mutt:
 
 <listitem>
 <cmdsynopsis>
+<command><link linkend="append-hook">append-hook</link></command>
+<arg choice="plain">
+<replaceable class="parameter">pattern</replaceable>
+</arg>
+<arg choice="plain">
+<replaceable class="parameter">shell-command</replaceable>
+</arg>
+</cmdsynopsis>
+</listitem>
+
+<listitem>
+<cmdsynopsis>
 <command><link linkend="auto-view">auto_view</link></command>
 <arg choice="plain">
 <replaceable>mimetype</replaceable>
@@ -12025,6 +13384,18 @@ The following are the commands understood by Mutt:
 </arg>
 <arg choice="plain">
 <replaceable class="parameter">local-charset</replaceable>
+</arg>
+</cmdsynopsis>
+</listitem>
+
+<listitem>
+<cmdsynopsis>
+<command><link linkend="close-hook">close-hook</link></command>
+<arg choice="plain">
+<replaceable class="parameter">pattern</replaceable>
+</arg>
+<arg choice="plain">
+<replaceable class="parameter">shell-command</replaceable>
 </arg>
 </cmdsynopsis>
 </listitem>
@@ -12095,6 +13466,18 @@ The following are the commands understood by Mutt:
 <replaceable>pattern</replaceable>
 </arg>
 </group>
+</cmdsynopsis>
+</listitem>
+
+<listitem>
+<cmdsynopsis>
+<command><link linkend="open-hook">open-hook</link></command>
+<arg choice="plain">
+<replaceable class="parameter">pattern</replaceable>
+</arg>
+<arg choice="plain">
+<replaceable class="parameter">shell-command</replaceable>
+</arg>
 </cmdsynopsis>
 </listitem>
 

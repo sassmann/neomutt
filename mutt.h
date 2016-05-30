@@ -101,9 +101,10 @@
 #define  M_CLEAR   (1<<5) /* clear input if printable character is pressed */
 #define  M_COMMAND (1<<6) /* do command completion */
 #define  M_PATTERN (1<<7) /* pattern mode - only used for history classes */
+#define  M_LABEL   (1<<8) /* do label completion */
 #if USE_NOTMUCH
-#define  M_NM_QUERY (1<<8) /* Notmuch query mode. */
-#define  M_NM_TAG   (1<<9) /* Notmuch tag +/- mode. */
+#define  M_NM_QUERY (1<<9) /* Notmuch query mode. */
+#define  M_NM_TAG   (1<<10) /* Notmuch tag +/- mode. */
 #endif
 
 /* flags for mutt_get_token() */
@@ -158,6 +159,11 @@ typedef enum
 #define M_ACCOUNTHOOK	(1<<9)
 #define M_REPLYHOOK	(1<<10)
 #define M_SEND2HOOK     (1<<11)
+#ifdef USE_COMPRESSED
+#define M_OPENHOOK	(1<<12)
+#define M_APPENDHOOK	(1<<13)
+#define M_CLOSEHOOK	(1<<14)
+#endif
 
 /* tree characters for linearize_tree and print_enriched_string */
 #define M_TREE_LLCORNER		1
@@ -248,6 +254,9 @@ enum
   M_NOTMUCH_LABEL,
 #endif
   M_MIMEATTACH,
+#ifdef USE_NNTP
+  M_NEWSGROUPS,
+#endif
   
   /* Options for Mailcap lookup */
   M_EDIT,
@@ -304,6 +313,11 @@ enum
 #endif
   OPT_SUBJECT,
   OPT_VERIFYSIG,      /* verify PGP signatures */
+#ifdef USE_NNTP
+  OPT_TOMODERATED,
+  OPT_CATCHUP,
+  OPT_FOLLOWUPTOPOSTER,
+#endif
     
   /* THIS MUST BE THE LAST VALUE. */
   OPT_MAX
@@ -322,6 +336,7 @@ enum
 #define SENDPOSTPONEDFCC	(1<<9) /* used by mutt_get_postponed() to signal that the x-mutt-fcc header field was present */
 #define SENDNOFREEHEADER	(1<<10)   /* Used by the -E flag */
 #define SENDDRAFTFILE		(1<<11)   /* Used by the -H flag */
+#define SENDNEWS	(1<<12)
 
 /* flags for mutt_compose_menu() */
 #define M_COMPOSE_NOFREEHEADER (1<<0)
@@ -336,6 +351,12 @@ enum
 #define M_SPAM          1
 #define M_NOSPAM        2
 
+/* flags for keywords headers */
+#define M_X_LABEL         (1<<0)  /* introduced to mutt in 2000 */
+#define M_X_KEYWORDS      (1<<1)  /* used in c-client, dovecot */
+#define M_X_MOZILLA_KEYS  (1<<2)  /* tbird */
+#define M_KEYWORDS        (1<<3)  /* rfc2822 */
+
 /* boolean vars */
 enum
 {
@@ -345,6 +366,8 @@ enum
   OPTASCIICHARS,
   OPTASKBCC,
   OPTASKCC,
+  OPTASKFOLLOWUP,
+  OPTASKXCOMMENTTO,
   OPTATTACHSPLIT,
   OPTAUTOEDIT,
   OPTAUTOTAG,
@@ -411,6 +434,8 @@ enum
   OPTIMPLICITAUTOVIEW,
   OPTINCLUDEONLYFIRST,
   OPTKEEPFLAGGED,
+  OPTKEYWORDSLEGACY,
+  OPTKEYWORDSSTANDARD,
   OPTMAILCAPSANITIZE,
   OPTMAILCHECKRECENT,
   OPTMAILDIRTRASH,
@@ -426,6 +451,9 @@ enum
   OPTMETOO,
   OPTMHPURGE,
   OPTMIMEFORWDECODE,
+#ifdef USE_NNTP
+  OPTMIMESUBJECT,	/* encode subject line with RFC2047 */
+#endif
   OPTNARROWTREE,
   OPTPAGERSTOP,
   OPTPIPEDECODE,
@@ -523,6 +551,17 @@ enum
   OPTPGPAUTOINLINE,
   OPTPGPREPLYINLINE,
 
+  /* news options */
+
+#ifdef USE_NNTP
+  OPTSHOWNEWNEWS,
+  OPTSHOWONLYUNREAD,
+  OPTSAVEUNSUB,
+  OPTLISTGROUP,
+  OPTLOADDESC,
+  OPTXCOMMENTTO,
+#endif
+
   /* pseudo options */
 
   OPTAUXSORT,		/* (pseudo) using auxiliary sort function */
@@ -543,6 +582,7 @@ enum
   OPTSORTSUBTHREADS,	/* (pseudo) used when $sort_aux changes */
   OPTNEEDRESCORE,	/* (pseudo) set when the `score' command is used */
   OPTATTACHMSG,		/* (pseudo) used by attach-message */
+  OPTHIDEREAD,		/* (pseudo) whether or not hide read messages */
   OPTKEEPQUIET,		/* (pseudo) shut up the message and refresh
 			 * 	    functions while we are executing an
 			 * 	    external program.
@@ -556,6 +596,10 @@ enum
 #ifdef USE_NOTMUCH
   OPTVIRTSPOOLFILE,
   OPTNOTMUCHRECORD,
+#endif
+#ifdef USE_NNTP
+  OPTNEWS,		/* (pseudo) used to change reader mode */
+  OPTNEWSSEND,		/* (pseudo) used to change behavior when posting */
 #endif
 
   OPTMAX
@@ -637,10 +681,19 @@ typedef struct envelope
   char *supersedes;
   char *date;
   char *x_label;
+  char *organization;
+#ifdef USE_NNTP
+  char *newsgroups;
+  char *xref;
+  char *followup_to;
+  char *x_comment_to;
+#endif
   BUFFER *spam;
   LIST *references;		/* message references (in reverse order) */
   LIST *in_reply_to;		/* in-reply-to header content */
   LIST *userhdrs;		/* user defined headers */
+  LIST *labels;
+  int kwtypes;
 
   unsigned int irt_changed : 1; /* In-Reply-To changed to link/break threads */
   unsigned int refs_changed : 1; /* References changed to break thread */
@@ -776,6 +829,7 @@ typedef struct header
 					 * This flag is used by the maildir_trash
 					 * option.
 					 */
+  unsigned int label_changed : 1;	/* editable - used for syncing */
   
   /* timezone of the sender of this message */
   unsigned int zhours : 5;
@@ -824,7 +878,7 @@ typedef struct header
   int refno;			/* message number on server */
 #endif
 
-#if defined USE_POP || defined USE_IMAP || defined USE_NOTMUCH
+#if defined USE_POP || defined USE_IMAP || defined USE_NOTMUCH || defined USE_NNTP
   void *data;            	/* driver-specific data */
   void (*free_cb)(struct header *); /* driver-specific data free function */
 #endif
@@ -938,6 +992,11 @@ typedef struct _context
   int appended;                 /* how many saved messages? */
   int flagged;			/* how many flagged messages */
   int msgnotreadyet;		/* which msg "new" in pager, -1 if none */
+
+#ifdef USE_COMPRESSED
+  void *compress_info;		/* compressed mbox module private data */
+  char *realpath;		/* path to compressed mailbox */
+#endif /* USE_COMPRESSED */
 
   short magic;			/* mailbox type */
 

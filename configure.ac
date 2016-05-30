@@ -209,6 +209,14 @@ AC_ARG_ENABLE(notmuch, AC_HELP_STRING([--enable-notmuch], [Enable NOTMUCH suppor
 AM_CONDITIONAL(BUILD_NOTMUCH, test x$need_notmuch = xyes)
 
 
+AC_ARG_ENABLE(compressed, AC_HELP_STRING([--enable-compressed], [Enable compressed folders support]),
+[       if test x$enableval = xyes ; then
+                AC_DEFINE(USE_COMPRESSED,1, [ Define to enable compressed folders support. ])
+		need_compress="yes"
+        fi
+])
+AM_CONDITIONAL(BUILD_COMPRESS, test x$need_compress = xyes)
+
 AC_ARG_WITH(mixmaster, AS_HELP_STRING([--with-mixmaster@<:@=PATH@:>@],[Include Mixmaster support]),
   [if test "$withval" != no
    then
@@ -635,6 +643,15 @@ AC_ARG_ENABLE(imap, AS_HELP_STRING([--enable-imap],[Enable IMAP support]),
 ])
 AM_CONDITIONAL(BUILD_IMAP, test x$need_imap = xyes)
 
+AC_ARG_ENABLE(nntp, AC_HELP_STRING([--enable-nntp],[Enable NNTP support]),
+[	if test x$enableval = xyes ; then
+		AC_DEFINE(USE_NNTP,1,[ Define if you want support for the NNTP protocol. ])
+		MUTT_LIB_OBJECTS="$MUTT_LIB_OBJECTS nntp.o newsrc.o"
+		need_nntp="yes"
+		need_socket="yes"
+	fi
+])
+
 AC_ARG_ENABLE(smtp, AS_HELP_STRING([--enable-smtp],[include internal SMTP relay support]),
 	[if test $enableval = yes; then
 		AC_DEFINE(USE_SMTP, 1, [Include internal SMTP relay support])
@@ -642,7 +659,7 @@ AC_ARG_ENABLE(smtp, AS_HELP_STRING([--enable-smtp],[include internal SMTP relay 
 		need_socket="yes"
 	fi])
 
-if test x"$need_imap" = xyes -o x"$need_pop" = xyes ; then
+if test x"$need_imap" = xyes -o x"$need_pop" = xyes -o x"$need_nntp" = xyes ; then
   MUTT_LIB_OBJECTS="$MUTT_LIB_OBJECTS bcache.o"
 fi
 
@@ -1111,6 +1128,13 @@ AC_ARG_ENABLE(iconv, AS_HELP_STRING([--disable-iconv],[Disable iconv support]),
 ])
 
 MUTT_AM_GNU_GETTEXT
+
+AC_ARG_ENABLE(quick_build, AC_HELP_STRING([--enable-quick-build], [Speed up the build (skip non-code)]),
+[       if test x$enableval = xyes && test "$BUILD_INCLUDED_LIBINTL" = "no"; then
+		need_quick_build="yes"
+        fi
+])
+AM_CONDITIONAL(QUICK_BUILD, test x$need_quick_build = xyes)
 
 if test "$am_cv_func_iconv" != "yes"
 then

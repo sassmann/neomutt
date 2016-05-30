@@ -33,6 +33,10 @@
 #include "sidebar.h"
 #endif
 
+#ifdef USE_COMPRESSED
+#include "compress.h"
+#endif
+
 #ifdef USE_IMAP
 #include "imap.h"
 #endif
@@ -43,6 +47,10 @@
 
 #ifdef USE_NOTMUCH
 #include "mutt_notmuch.h"
+#endif
+
+#ifdef USE_NNTP
+#include "nntp.h"
 #endif
 
 #include "buffy.h"
@@ -354,6 +362,22 @@ int mx_is_pop (const char *p)
 }
 #endif
 
+#ifdef USE_NNTP
+int mx_is_nntp (const char *p)
+{
+  url_scheme_t scheme;
+
+  if (!p)
+    return 0;
+
+  scheme = url_check_scheme (p);
+  if (scheme == U_NNTP || scheme == U_NNTPS)
+    return 1;
+
+  return 0;
+}
+#endif
+
 #ifdef USE_NOTMUCH
 
 int mx_is_notmuch(const char *p)
@@ -393,6 +417,11 @@ int mx_get_magic (const char *path)
   if (mx_is_notmuch(path))
     return M_NOTMUCH;
 #endif
+
+#ifdef USE_NNTP
+  if (mx_is_nntp (path))
+    return M_NNTP;
+#endif /* USE_NNTP */
 
   if (stat (path, &st) == -1)
   {
@@ -448,6 +477,10 @@ int mx_get_magic (const char *path)
     return (-1);
   }
 
+#ifdef USE_COMPRESSED
+  if (magic == 0 && comp_can_read (path))
+    return M_COMPRESSED;
+#endif
   return (magic);
 }
 
@@ -486,6 +519,13 @@ int mx_access (const char* path, int flags)
 static int mx_open_mailbox_append (CONTEXT *ctx, int flags)
 {
   struct stat sb;
+
+#ifdef USE_COMPRESSED
+  /* special case for appending to compressed folders -
+   * even if we can not open them for reading */
+  if (comp_can_append (ctx->path))
+    comp_open_append (ctx);
+#endif
 
   ctx->append = 1;
 
@@ -655,7 +695,12 @@ CONTEXT *mx_open_mailbox (const char *path, int flags, CONTEXT *pctx)
   }
 
   ctx->magic = mx_get_magic (path);
-  
+
+#ifdef USE_COMPRESSED
+  if (ctx->magic == M_COMPRESSED)
+    comp_open_read (ctx);
+#endif
+
   if(ctx->magic == 0)
     mutt_error (_("%s is not a mailbox."), path);
 
@@ -712,6 +757,12 @@ CONTEXT *mx_open_mailbox (const char *path, int flags, CONTEXT *pctx)
       rc = nm_read_query (ctx);
       break;
 #endif /* USE_IMAP */
+
+#ifdef USE_NNTP
+    case M_NNTP:
+      rc = nntp_open_mailbox (ctx);
+      break;
+#endif /* USE_NNTP */
 
     default:
       rc = -1;
@@ -783,6 +834,10 @@ void mx_fastclose_mailbox (CONTEXT *ctx)
 #endif
   FREE (&ctx->hdrs);
   FREE (&ctx->v2r);
+#ifdef USE_COMPRESSED
+  if (ctx->compress_info)
+    comp_fast_close (ctx);
+#endif
   FREE (&ctx->path);
   FREE (&ctx->pattern);
   if (ctx->limit_pattern) 
@@ -833,6 +888,11 @@ static int sync_mailbox (CONTEXT *ctx, int *index_hint)
       break;
 #endif /* USE_NOTMUCH */
 
+#ifdef USE_NNTP
+    case M_NNTP:
+      rc = nntp_sync_mailbox (ctx);
+      break;
+#endif /* USE_NNTP */
   }
 
 #if 0
@@ -842,6 +902,12 @@ static int sync_mailbox (CONTEXT *ctx, int *index_hint)
   
   if (tmp && tmp->new == 0)
     mutt_update_mailbox (tmp);
+
+#ifdef USE_COMPRESSED
+  if (rc == 0 && ctx->compress_info)
+    return comp_sync (ctx);
+#endif
+
   return rc;
 }
 
@@ -932,6 +998,25 @@ int mx_close_mailbox (CONTEXT *ctx, int *index_hint)
     return 0;
   }
 
+#ifdef USE_NNTP
+  if (ctx->unread && ctx->magic == M_NNTP)
+  {
+    NNTP_DATA *nntp_data = ctx->data;
+
+    if (nntp_data && nntp_data->nserv && nntp_data->group)
+    {
+      int rc = query_quadoption (OPT_CATCHUP, _("Mark all articles read?"));
+      if (rc < 0)
+      {
+	ctx->closing = 0;
+	return -1;
+      }
+      else if (rc == M_YES)
+	mutt_newsgroup_catchup (nntp_data->nserv, nntp_data->group);
+    }
+  }
+#endif
+
   for (i = 0; i < ctx->msgcount; i++)
   {
     if (!ctx->hdrs[i]->deleted && ctx->hdrs[i]->read 
@@ -944,6 +1029,12 @@ int mx_close_mailbox (CONTEXT *ctx, int *index_hint)
       ctx->flagged--;
 #endif
   }
+
+#ifdef USE_NNTP
+  /* don't need to move articles from newsgroup */
+  if (ctx->magic == M_NNTP)
+    read_msgs = 0;
+#endif
 
   if (read_msgs && quadoption (OPT_MOVE) != M_NO)
   {
@@ -1120,6 +1211,11 @@ int mx_close_mailbox (CONTEXT *ctx, int *index_hint)
       (ctx->magic == M_MMDF || ctx->magic == M_MBOX) &&
       !mutt_is_spool(ctx->path) && !option (OPTSAVEEMPTY))
     mx_unlink_empty (ctx->path);
+
+#ifdef USE_COMPRESSED
+  if (ctx->compress_info && comp_slow_close (ctx))
+    return (-1);
+#endif
 
   mx_fastclose_mailbox (ctx);
 
@@ -1448,6 +1544,11 @@ int mx_check_mailbox (CONTEXT *ctx, int *index_hint, int lock)
 {
   int rc;
 
+#ifdef USE_COMPRESSED
+  if (ctx->compress_info)
+    return comp_check_mailbox (ctx);
+#endif
+
   if (ctx)
   {
     if (ctx->locked) lock = 0;
@@ -1501,6 +1602,11 @@ int mx_check_mailbox (CONTEXT *ctx, int *index_hint, int lock)
       case M_NOTMUCH:
 	return nm_check_database(ctx, index_hint);
 #endif
+
+#ifdef USE_NNTP
+      case M_NNTP:
+	return (nntp_check_mailbox (ctx, 0));
+#endif /* USE_NNTP */
     }
   }
 
@@ -1569,6 +1675,15 @@ MESSAGE *mx_open_message (CONTEXT *ctx, int msgno)
       break;
     }
 #endif /* USE_POP */
+
+#ifdef USE_NNTP
+    case M_NNTP:
+    {
+      if (nntp_fetch_message (msg, ctx, msgno) != 0)
+	FREE (&msg);
+      break;
+    }
+#endif /* USE_NNTP */
 
     default:
       dprint (1, (debugfile, "mx_open_message(): function not implemented for mailbox type %d.\n", ctx->magic));
@@ -1649,8 +1764,11 @@ int mx_close_message (MESSAGE **msg)
   int r = 0;
 
   if ((*msg)->magic == M_MH || (*msg)->magic == M_MAILDIR
-      || (*msg)->magic == M_IMAP || (*msg)->magic == M_POP
-      || (*msg)->magic == M_NOTMUCH)
+#ifdef USE_NNTP
+      || (*msg)->magic == M_NNTP
+#endif
+      || (*msg)->magic == M_NOTMUCH
+      || (*msg)->magic == M_IMAP || (*msg)->magic == M_POP)
   {
     r = safe_fclose (&(*msg)->fp);
   }

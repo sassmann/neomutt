@@ -336,7 +336,7 @@ void mutt_free_header (HEADER **h)
 #ifdef MIXMASTER
   mutt_free_list (&(*h)->chain);
 #endif
-#if defined USE_POP || defined USE_IMAP || defined USE_NOTMUCH
+#if defined USE_POP || defined USE_IMAP || defined USE_NOTMUCH || defined USE_NNTP
   if ((*h)->free_cb)
     (*h)->free_cb(*h);
   FREE (&(*h)->data);
@@ -728,12 +728,21 @@ void mutt_free_envelope (ENVELOPE **p)
   FREE (&(*p)->supersedes);
   FREE (&(*p)->date);
   FREE (&(*p)->x_label);
+  FREE (&(*p)->organization);
+#ifdef USE_NNTP
+  FREE (&(*p)->newsgroups);
+  FREE (&(*p)->xref);
+  FREE (&(*p)->followup_to);
+  FREE (&(*p)->x_comment_to);
+#endif
 
   mutt_buffer_free (&(*p)->spam);
 
   mutt_free_list (&(*p)->references);
   mutt_free_list (&(*p)->in_reply_to);
   mutt_free_list (&(*p)->userhdrs);
+  mutt_label_ref_dec ((*p));
+  mutt_free_list (&(*p)->labels);
   FREE (p);		/* __FREE_CHECKED__ */
 }
 
@@ -756,7 +765,7 @@ void mutt_merge_envelopes(ENVELOPE* base, ENVELOPE** extra)
   MOVE_ELEM(message_id);
   MOVE_ELEM(supersedes);
   MOVE_ELEM(date);
-  MOVE_ELEM(x_label);
+  MOVE_ELEM(labels);
   if (!base->refs_changed)
   {
     MOVE_ELEM(references);
@@ -1659,6 +1668,14 @@ int mutt_save_confirm (const char *s, struct stat *st)
 	ret = -1;
     }
   }
+
+#ifdef USE_NNTP
+  if (magic == M_NNTP)
+  {
+    mutt_error _("Can't save message to news server.");
+    return 0;
+  }
+#endif
 
   if (stat (s, st) != -1)
   {

@@ -96,6 +96,9 @@ Flags[] =
   { 'U', M_UNREAD,		0,		NULL },
   { 'v', M_COLLAPSED,		0,		NULL },
   { 'V', M_CRYPT_VERIFIED,	0,		NULL },
+#ifdef USE_NNTP
+  { 'w', M_NEWSGROUPS,		0,		eat_regexp },
+#endif
   { 'x', M_REFERENCE,		0,		eat_regexp },
   { 'X', M_MIMEATTACH,		0,		eat_range },
   { 'y', M_XLABEL,		0,		eat_regexp },
@@ -1257,7 +1260,19 @@ mutt_pattern_exec (struct pattern_t *pat, pattern_exec_flag flags, CONTEXT *ctx,
        break;
      return (pat->not ^ ((h->security & APPLICATION_PGP) && (h->security & PGPKEY)));
     case M_XLABEL:
-      return (pat->not ^ (h->env->x_label && patmatch (pat, h->env->x_label) == 0));
+      {
+        LIST *label;
+        int result = 0;
+        for (label = h->env->labels; label; label = label->next)
+        {
+          if (label->data == NULL)
+            continue;
+          result = patmatch (pat, label->data) == 0;
+          if (result)
+            break;
+        }
+        return pat->not ^ result;
+      }
 #ifdef USE_NOTMUCH
     case M_NOTMUCH_LABEL:
       {
@@ -1277,6 +1292,10 @@ mutt_pattern_exec (struct pattern_t *pat, pattern_exec_flag flags, CONTEXT *ctx,
       }
     case M_UNREFERENCED:
       return (pat->not ^ (h->thread && !h->thread->child));
+#ifdef USE_NNTP
+    case M_NEWSGROUPS:
+      return (pat->not ^ (h->env->newsgroups && patmatch (pat, h->env->newsgroups) == 0));
+#endif
   }
   mutt_error (_("error: unknown op %d (report this error)."), pat->op);
   return (-1);
@@ -1426,6 +1445,7 @@ int mutt_pattern_func (int op, char *prompt)
   progress_t progress;
 
   strfcpy (buf, NONULL (Context->pattern), sizeof (buf));
+  if (prompt || op != M_LIMIT)
   if (mutt_get_field (prompt, buf, sizeof (buf), M_PATTERN | M_CLEAR) != 0 || !buf[0])
     return (-1);
 

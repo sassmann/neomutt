@@ -35,9 +35,15 @@ enum
   M_MMDF,
   M_MH,
   M_MAILDIR,
+#ifdef USE_NNTP
+  M_NNTP,
+#endif
   M_IMAP,
   M_NOTMUCH,
   M_POP
+#ifdef USE_COMPRESSED
+  , M_COMPRESSED
+#endif
 };
 
 WHERE short DefaultMagic INITVAL (M_MBOX);
