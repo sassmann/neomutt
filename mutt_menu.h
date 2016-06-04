@@ -35,6 +35,9 @@
 #define REDRAW_FULL		(1<<5)
 #define REDRAW_BODY		(1<<6)
 #define REDRAW_SIGWINCH		(1<<7)
+#ifdef USE_SIDEBAR
+#define REDRAW_SIDEBAR		(1<<8)
+#endif
 
 #define MUTT_MODEFMT "-- Mutt: %s"
 
@@ -87,6 +90,9 @@ typedef struct menu_t
 void mutt_menu_init (void);
 void menu_jump (MUTTMENU *);
 void menu_redraw_full (MUTTMENU *);
+#ifdef USE_SIDEBAR
+void menu_redraw_sidebar (MUTTMENU *);
+#endif
 void menu_redraw_index (MUTTMENU *);
 void menu_redraw_status (MUTTMENU *);
 void menu_redraw_motion (MUTTMENU *);

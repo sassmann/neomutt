@@ -255,7 +255,12 @@ void _mutt_set_flag (CONTEXT *ctx, HEADER *h, int flag, int bf, int upd_ctx)
   }
 
   if (update)
+  {
     mutt_set_header_color(ctx, h);
+#ifdef USE_SIDEBAR
+    SidebarNeedsRedraw = 1;
+#endif
+  }
 
   /* if the message status has changed, we need to invalidate the cached
    * search results so that any future search will match the current status

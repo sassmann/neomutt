@@ -24,6 +24,9 @@
 #include "mutt_curses.h"
 #include "mutt_menu.h"
 #include "mbyte.h"
+#ifdef USE_SIDEBAR
+#include "sidebar.h"
+#endif
 
 char* SearchBuffers[MENU_MAX];
 
@@ -214,6 +217,9 @@ void menu_redraw_full (MUTTMENU *menu)
   mutt_show_error ();
 
   menu->redraw = REDRAW_INDEX | REDRAW_STATUS;
+#ifdef USE_SIDEBAR
+  menu->redraw |= REDRAW_SIDEBAR;
+#endif
 }
 
 void menu_redraw_status (MUTTMENU *menu)
@@ -227,6 +233,14 @@ void menu_redraw_status (MUTTMENU *menu)
   NORMAL_COLOR;
   menu->redraw &= ~REDRAW_STATUS;
 }
+
+#ifdef USE_SIDEBAR
+void menu_redraw_sidebar (MUTTMENU *menu)
+{
+  SidebarNeedsRedraw = 0;
+  mutt_sb_draw ();
+}
+#endif
 
 void menu_redraw_index (MUTTMENU *menu)
 {
@@ -837,6 +851,10 @@ int menu_redraw (MUTTMENU *menu)
   
   if (menu->redraw & REDRAW_STATUS)
     menu_redraw_status (menu);
+#ifdef USE_SIDEBAR
+  if (menu->redraw & REDRAW_SIDEBAR || SidebarNeedsRedraw)
+    menu_redraw_sidebar (menu);
+#endif
   if (menu->redraw & REDRAW_INDEX)
     menu_redraw_index (menu);
   else if (menu->redraw & (REDRAW_MOTION | REDRAW_MOTION_RESYNCH))

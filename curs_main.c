@@ -26,7 +26,12 @@
 #include "mailbox.h"
 #include "mapping.h"
 #include "sort.h"
+#include "buffy.h"
 #include "mx.h"
+
+#ifdef USE_SIDEBAR
+#include "sidebar.h"
+#endif
 
 #ifdef USE_POP
 #include "pop.h"
@@ -593,8 +598,12 @@ int mutt_index_menu (void)
        menu->redraw |= REDRAW_STATUS;
      if (do_buffy_notify)
      {
-       if (mutt_buffy_notify () && option (OPTBEEPNEW))
- 	beep ();
+       if (mutt_buffy_notify())
+       {
+         menu->redraw |= REDRAW_STATUS;
+         if (option (OPTBEEPNEW))
+           beep();
+       }
      }
      else
        do_buffy_notify = 1;
@@ -611,6 +620,13 @@ int mutt_index_menu (void)
 
     if (menu->menu == MENU_MAIN)
     {
+#ifdef USE_SIDEBAR
+      if (menu->redraw & REDRAW_SIDEBAR || SidebarNeedsRedraw)
+      {
+        mutt_sb_set_buffystats (Context);
+        menu_redraw_sidebar (menu);
+      }
+#endif
       if (Context && Context->hdrs && !(menu->current >= Context->vcount))
       {
 	menu_check_recenter (menu);
@@ -1149,6 +1165,9 @@ int mutt_index_menu (void)
 	  menu->redraw = REDRAW_FULL;
 	break;
 
+#ifdef USE_SIDEBAR
+      case OP_SIDEBAR_OPEN:
+#endif
       case OP_MAIN_CHANGE_FOLDER:
       case OP_MAIN_NEXT_UNREAD_MAILBOX:
 
@@ -1176,20 +1195,29 @@ int mutt_index_menu (void)
 	    break;
 	  }
 	}
+#ifdef USE_SIDEBAR
+        else if (op == OP_SIDEBAR_OPEN)
+        {
+          const char *path = mutt_sb_get_highlight();
+          if (!path || !*path)
+            break;
+          strncpy (buf, path, sizeof (buf));
+        }
+#endif
 	else
 	{
 	  mutt_buffy (buf, sizeof (buf));
 
-	  if (mutt_enter_fname (cp, buf, sizeof (buf), &menu->redraw, 1) == -1)
-	  {
-	    if (menu->menu == MENU_PAGER)
-	    {
-	      op = OP_DISPLAY_MESSAGE;
-	      continue;
-	    }
-	    else
-	      break;
-	  }
+          if (mutt_enter_fname (cp, buf, sizeof (buf), &menu->redraw, 1) == -1)
+          {
+            if (menu->menu == MENU_PAGER)
+            {
+              op = OP_DISPLAY_MESSAGE;
+              continue;
+            }
+            else
+              break;
+          }
 	  if (!buf[0])
 	  {
             mutt_window_clearline (MuttMessageWindow, 0);
@@ -1198,6 +1226,9 @@ int mutt_index_menu (void)
 	}
 
 	mutt_expand_path (buf, sizeof (buf));
+#ifdef USE_SIDEBAR
+	mutt_sb_set_open_buffy (buf);
+#endif
 	if (mx_get_magic (buf) <= 0)
 	{
 	  mutt_error (_("%s is not a mailbox."), buf);
@@ -2309,6 +2340,22 @@ int mutt_index_menu (void)
 	mutt_what_key();
 	break;
 
+#ifdef USE_SIDEBAR
+      case OP_SIDEBAR_NEXT:
+      case OP_SIDEBAR_NEXT_NEW:
+      case OP_SIDEBAR_PAGE_DOWN:
+      case OP_SIDEBAR_PAGE_UP:
+      case OP_SIDEBAR_PREV:
+      case OP_SIDEBAR_PREV_NEW:
+        mutt_sb_change_mailbox (op);
+        break;
+
+      case OP_SIDEBAR_TOGGLE_VISIBLE:
+	toggle_option (OPTSIDEBAR);
+        mutt_reflow_windows();
+	menu->redraw = REDRAW_FULL;
+	break;
+#endif
       default:
 	if (menu->menu == MENU_MAIN)
 	  km_error_key (MENU_MAIN);
