@@ -33,13 +33,6 @@
 #define KEY_DC SL_KEY_DELETE
 #define KEY_IC SL_KEY_IC
 
-/*
- * ncurses and SLang seem to send different characters when the Enter key is
- * pressed, so define some macros to properly detect the Enter key.
- */
-#define M_ENTER_C '\r'
-#define M_ENTER_S "\r"
-
 #else /* USE_SLANG_CURSES */
 
 #if HAVE_NCURSESW_NCURSES_H
@@ -51,9 +44,6 @@
 #else
 # include <curses.h>
 #endif
-
-#define M_ENTER_C '\n'
-#define M_ENTER_S "\n"
 
 #endif /* USE_SLANG_CURSES */
 
@@ -192,12 +182,16 @@ void mutt_progress_update (progress_t* progress, long pos, int percent);
 
 static inline int mutt_term_width(short wrap)
 {
+  int cols = COLS;
+#ifdef USE_SIDEBAR
+  cols -= SidebarWidth;
+#endif
   if (wrap < 0)
-    return COLS > -wrap ? COLS + wrap : COLS;
+    return cols > -wrap ? cols + wrap : cols;
   else if (wrap)
-    return wrap < COLS ? wrap : COLS;
+    return wrap < cols ? wrap : cols;
   else
-    return COLS;
+    return cols;
 }
 
 extern int *ColorQuote;

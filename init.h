@@ -1857,7 +1857,7 @@ struct option_t MuttVars[] = {
   /*
   ** .pp
   ** Your login name on the NNTP server.  If \fIunset\fP and NNTP server requires
-  ** authentification, Mutt will prompt you for your account name when you
+  ** authentication, Mutt will prompt you for your account name when you
   ** connect to news server.
   */
   { "nntp_pass",	DT_STR, R_NONE, UL &NntpPass, UL "" },
@@ -2980,6 +2980,7 @@ struct option_t MuttVars[] = {
   ** .ts
   ** set sidebar_delim_chars='/'
   ** .te
+  ** .pp
   ** IMAP mailboxes are often named: `folder1.folder2.mailbox'.
   ** .ts
   ** set sidebar_delim_chars='.'
@@ -3048,7 +3049,7 @@ struct option_t MuttVars[] = {
   /*
   ** .pp
   ** Set sidebar_refresh_time to the minimum number of seconds between refreshes.
-  ** This will reduced network traffic.
+  ** This will reduce network traffic.
   ** .pp
   ** \fBNote:\fP Set to 0 to disable refreshing.
   */
@@ -3144,7 +3145,7 @@ struct option_t MuttVars[] = {
   /*
   ** .pp
   ** Lines of quoted text that are displayed before the unquoted text after
-  ** 'skip to quoted' command (S)
+  ** "skip to quoted" command (S)
   */
   { "sleep_time",	DT_NUM, R_NONE, UL &SleepTime, 1 },
   /*
