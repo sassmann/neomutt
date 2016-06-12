@@ -1409,6 +1409,22 @@ struct option_t MuttVars[] = {
   ** When \fI$$mark_old\fP is set, Mutt does not consider the mailbox to contain new
   ** mail if only old messages exist.
   */
+  { "mail_check_stats", DT_BOOL, R_NONE, OPTMAILCHECKSTATS, 0 },
+  /*
+  ** .pp
+  ** When \fIset\fP, mutt will periodically calculate message
+  ** statistics of a mailbox while polling for new mail.  It will
+  ** check for unread, flagged, and total message counts.  Because
+  ** this operation is more performance intensive, it defaults to
+  ** \fIunset\fP, and has a separate option, $$mail_check_stats_interval, to
+  ** control how often to update these counts.
+  */
+  { "mail_check_stats_interval", DT_NUM, R_NONE, UL &BuffyCheckStatsInterval, 60 },
+  /*
+  ** .pp
+  ** When $$mail_check_stats is \fIset\fP, this variable configures
+  ** how often (in seconds) mutt will update message counts.
+  */
   { "mailcap_path",	DT_STR,	 R_NONE, UL &MailcapPath, 0 },
   /*
   ** .pp
@@ -2700,7 +2716,7 @@ struct option_t MuttVars[] = {
   ** .pp
   ** \fBSee also:\fP $$sidebar_short_path, $$sidebar_indent_string, $$sidebar_delim_chars.
   */
-  { "sidebar_format", DT_STR, R_NONE, UL &SidebarFormat, UL "%B%?F? [%F]?%* %?N?%N/?%S" },
+  { "sidebar_format", DT_STR, R_NONE, UL &SidebarFormat, UL "%B%*  %n" },
   /*
   ** .pp
   ** This variable allows you to customize the sidebar display. This string is
@@ -2710,6 +2726,7 @@ struct option_t MuttVars[] = {
   ** .dt %B  .dd Name of the mailbox
   ** .dt %S  .dd * Size of mailbox (total number of messages)
   ** .dt %N  .dd * Number of New messages in the mailbox
+  ** .dt %n  .dd N if mailbox has new mail, blank otherwise
   ** .dt %F  .dd * Number of Flagged messages in the mailbox
   ** .dt %!  .dd ``!'' : one flagged message;
   **             ``!!'' : two flagged messages;
@@ -2725,6 +2742,10 @@ struct option_t MuttVars[] = {
   ** .pp
   ** * = Can be optionally printed if nonzero
   ** @ = Only applicable to the current folder
+  ** .pp
+  ** In order to use %S, %N, %F, and %!, $$mail_check_stats must
+  ** be \fIset\fP.  When set, a useful value for this setting is
+  ** "%B%?F? [%F]?%* %?N?%N/?%S".
   */
   { "sidebar_indent_string", DT_STR, R_BOTH, UL &SidebarIndentString, UL "  " },
   /*
@@ -2749,14 +2770,6 @@ struct option_t MuttVars[] = {
   ** the list of mailboxes, but wrap around to the beginning. The
   ** \fC<sidebar-prev-new>\fP command is similarly affected, wrapping around to
   ** the end of the list.
-  */
-  { "sidebar_refresh_time", DT_NUM, R_BOTH, UL &SidebarRefreshTime, 60 },
-  /*
-  ** .pp
-  ** Set sidebar_refresh_time to the minimum number of seconds between refreshes.
-  ** This will reduced network traffic.
-  ** .pp
-  ** \fBNote:\fP Set to 0 to disable refreshing.
   */
   { "sidebar_short_path", DT_BOOL, R_BOTH, OPTSIDEBARSHORTPATH, 0 },
   /*
