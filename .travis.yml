@@ -36,7 +36,7 @@ env:
     - OPTS="--enable-debug --enable-exact-address --enable-flock --enable-gpgme --enable-hcache --enable-imap --enable-locales-fix --enable-mailtool --enable-nfs-fix --enable-notmuch --enable-pop --enable-sidebar --enable-smtp --with-domain --with-gnutls --with-gss --with-homespool --with-mixmaster --with-regex --with-sasl --with-ssl"
 
 before_install:
-  - curl -s https://flatcap.org/scan.coverity.com.crt | sudo tee -a /etc/ssl/certs/ca-certificates.crt
+  - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-certificates.crt
 
 script:
   - if [ ${COVERITY_SCAN_BRANCH} != 1 ]; then make ; fi
