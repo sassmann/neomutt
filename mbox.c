@@ -447,6 +447,40 @@ static int mbox_close_mailbox (CONTEXT *ctx)
   return 0;
 }
 
+static int mbox_open_message (CONTEXT *ctx,  MESSAGE *msg, int msgno)
+{
+  msg->fp = ctx->fp;
+
+  return 0;
+}
+
+static int mbox_close_message (CONTEXT *ctx, MESSAGE *msg)
+{
+  msg->fp = NULL;
+
+  return 0;
+}
+
+static int mbox_commit_message (CONTEXT *ctx, MESSAGE *msg)
+{
+  int r = fputc ('\n', msg->fp);
+
+  if (r == EOF)
+    return -1;
+
+  return 0;
+}
+
+static int mmdf_commit_message (CONTEXT *ctx, MESSAGE *msg)
+{
+  int r = fputs (MMDF_SEP, msg->fp);
+
+  if (r == EOF)
+    return -1;
+
+  return 0;
+}
+
 static int mbox_open_new_message (MESSAGE *msg, CONTEXT *dest, HEADER *hdr)
 {
   msg->fp = dest->fp;
@@ -1274,6 +1308,9 @@ int mbox_check_empty (const char *path)
 struct mx_ops mx_mbox_ops = {
   .open = mbox_open_mailbox,
   .close = mbox_close_mailbox,
+  .open_msg = mbox_open_message,
+  .close_msg = mbox_close_message,
+  .commit_msg = mbox_commit_message,
   .open_new_msg = mbox_open_new_message,
   .check = mbox_check_mailbox,
 };
@@ -1281,6 +1318,9 @@ struct mx_ops mx_mbox_ops = {
 struct mx_ops mx_mmdf_ops = {
   .open = mbox_open_mailbox,
   .close = mbox_close_mailbox,
+  .open_msg = mbox_open_message,
+  .close_msg = mbox_close_message,
+  .commit_msg = mmdf_commit_message,
   .open_new_msg = mbox_open_new_message,
   .check = mbox_check_mailbox,
 };

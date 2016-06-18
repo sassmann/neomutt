@@ -57,9 +57,6 @@ int mh_check_empty (const char *);
 
 int maildir_check_empty (const char *);
 
-int maildir_commit_message (CONTEXT *, MESSAGE *, HEADER *);
-int mh_commit_message (CONTEXT *, MESSAGE *, HEADER *);
-
 FILE *maildir_open_find_message (const char *, const char *);
 
 int mbox_strict_cmp_headers (const HEADER *, const HEADER *);

@@ -512,7 +512,7 @@ int pop_close_mailbox (CONTEXT *ctx)
 }
 
 /* fetch message from POP server */
-int pop_fetch_message (MESSAGE* msg, CONTEXT* ctx, int msgno)
+static int pop_fetch_message (CONTEXT* ctx, MESSAGE* msg, int msgno)
 {
   int ret;
   void *uidl;
@@ -654,6 +654,11 @@ int pop_fetch_message (MESSAGE* msg, CONTEXT* ctx, int msgno)
   rewind (msg->fp);
 
   return 0;
+}
+
+static int pop_close_message (CONTEXT *ctx, MESSAGE *msg)
+{
+  return safe_fclose (&msg->fp);
 }
 
 /* update POP mailbox - delete messages from server */
@@ -874,7 +879,7 @@ void pop_fetch_mail (void)
 	ret = -3;
       }
 
-      mx_close_message (&msg);
+      mx_close_message (&ctx, &msg);
     }
 
     if (ret == 0 && delanswer == MUTT_YES)
@@ -931,5 +936,7 @@ fail:
 struct mx_ops mx_pop_ops = {
   .open = pop_open_mailbox,
   .close = pop_close_mailbox,
+  .open_msg = pop_fetch_message,
+  .close_msg = pop_close_message,
   .check = pop_check_mailbox,
 };

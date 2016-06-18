@@ -1245,7 +1245,6 @@ MESSAGE *mx_open_new_message (CONTEXT *dest, HEADER *hdr, int flags)
   }
 
   msg = safe_calloc (1, sizeof (MESSAGE));
-  msg->magic = dest->magic;
   msg->write = 1;
 
   if (hdr)
@@ -1265,7 +1264,7 @@ MESSAGE *mx_open_new_message (CONTEXT *dest, HEADER *hdr, int flags)
     if (dest->magic == MUTT_MMDF)
       fputs (MMDF_SEP, msg->fp);
 
-    if ((msg->magic == MUTT_MBOX || msg->magic ==  MUTT_MMDF) &&
+    if ((dest->magic == MUTT_MBOX || dest->magic ==  MUTT_MMDF) &&
 	flags & MUTT_ADD_FROM)
     {
       if (hdr)
@@ -1308,69 +1307,33 @@ int mx_check_mailbox (CONTEXT *ctx, int *index_hint)
 /* return a stream pointer for a message */
 MESSAGE *mx_open_message (CONTEXT *ctx, int msgno)
 {
+  struct mx_ops *ops = mx_get_ops (ctx->magic);
   MESSAGE *msg;
-  
-  msg = safe_calloc (1, sizeof (MESSAGE));
-  switch (msg->magic = ctx->magic)
+  int ret;
+
+  if (!ops || !ops->open_msg)
   {
-    case MUTT_MBOX:
-    case MUTT_MMDF:
-      msg->fp = ctx->fp;
-      break;
-
-    case MUTT_MH:
-    case MUTT_MAILDIR:
-    {
-      HEADER *cur = ctx->hdrs[msgno];
-      char path[_POSIX_PATH_MAX];
-      
-      snprintf (path, sizeof (path), "%s/%s", ctx->path, cur->path);
-      
-      if ((msg->fp = fopen (path, "r")) == NULL && errno == ENOENT &&
-	  ctx->magic == MUTT_MAILDIR)
-	msg->fp = maildir_open_find_message (ctx->path, cur->path);
-      
-      if (msg->fp == NULL)
-      {
-	mutt_perror (path);
-	dprint (1, (debugfile, "mx_open_message: fopen: %s: %s (errno %d).\n",
-		    path, strerror (errno), errno));
-	FREE (&msg);
-      }
-    }
-    break;
-    
-#ifdef USE_IMAP
-    case MUTT_IMAP:
-    {
-      if (imap_fetch_message (msg, ctx, msgno) != 0)
-	FREE (&msg);
-      break;
-    }
-#endif /* USE_IMAP */
-
-#ifdef USE_POP
-    case MUTT_POP:
-    {
-      if (pop_fetch_message (msg, ctx, msgno) != 0)
-	FREE (&msg);
-      break;
-    }
-#endif /* USE_POP */
-
-    default:
-      dprint (1, (debugfile, "mx_open_message(): function not implemented for mailbox type %d.\n", ctx->magic));
-      FREE (&msg);
-      break;
+    dprint (1, (debugfile, "mx_open_message(): function not implemented for mailbox type %d.\n", ctx->magic));
+    return NULL;
   }
-  return (msg);
+
+  msg = safe_calloc (1, sizeof (MESSAGE));
+  ret = ops->open_msg (ctx, msg, msgno);
+  if (ret)
+    FREE (&msg);
+
+  return msg;
 }
 
 /* commit a message to a folder */
 
 int mx_commit_message (MESSAGE *msg, CONTEXT *ctx)
 {
+  struct mx_ops *ops = mx_get_ops (ctx->magic);
   int r = 0;
+
+  if (!ops || !ops->commit_msg)
+    return -1;
 
   if (!(msg->write && ctx->append))
   {
@@ -1379,43 +1342,7 @@ int mx_commit_message (MESSAGE *msg, CONTEXT *ctx)
     return -1;
   }
 
-  switch (msg->magic)
-  {
-    case MUTT_MMDF:
-    {
-      if (fputs (MMDF_SEP, msg->fp) == EOF)
-	r = -1;
-      break;
-    }
-    
-    case MUTT_MBOX:
-    {
-      if (fputc ('\n', msg->fp) == EOF)
-	r = -1;
-      break;
-    }
-
-#ifdef USE_IMAP
-    case MUTT_IMAP:
-    {
-      if ((r = safe_fclose (&msg->fp)) == 0)
-	r = imap_append_message (ctx, msg);
-      break;
-    }
-#endif
-    
-    case MUTT_MAILDIR:
-    {
-      r = maildir_commit_message (ctx, msg, NULL);
-      break;
-    }
-    
-    case MUTT_MH:
-    {
-      r = mh_commit_message (ctx, msg, NULL);
-      break;
-    }
-  }
+  r = ops->commit_msg (ctx, msg);
   
   if (r == 0 && (ctx->magic == MUTT_MBOX || ctx->magic == MUTT_MMDF)
       && (fflush (msg->fp) == EOF || fsync (fileno (msg->fp)) == -1))
@@ -1428,22 +1355,18 @@ int mx_commit_message (MESSAGE *msg, CONTEXT *ctx)
 }
 
 /* close a pointer to a message */
-int mx_close_message (MESSAGE **msg)
+int mx_close_message (CONTEXT *ctx, MESSAGE **msg)
 {
+  struct mx_ops *ops = mx_get_ops (ctx->magic);
   int r = 0;
 
-  if ((*msg)->magic == MUTT_MH || (*msg)->magic == MUTT_MAILDIR
-      || (*msg)->magic == MUTT_IMAP || (*msg)->magic == MUTT_POP)
-  {
-    r = safe_fclose (&(*msg)->fp);
-  }
-  else
-    (*msg)->fp = NULL;
+  if (ops && ops->close_msg)
+    r = ops->close_msg (ctx, *msg);
 
   if ((*msg)->path)
   {
     dprint (1, (debugfile, "mx_close_message (): unlinking %s\n",
-		(*msg)->path));
+            (*msg)->path));
     unlink ((*msg)->path);
     FREE (&(*msg)->path);
   }

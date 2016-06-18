@@ -1336,6 +1336,43 @@ static void maildir_flags (char *dest, size_t destlen, HEADER * hdr)
   }
 }
 
+static int maildir_mh_open_message (CONTEXT *ctx, MESSAGE *msg, int msgno,
+                                    int is_maildir)
+{
+  HEADER *cur = ctx->hdrs[msgno];
+  char path[_POSIX_PATH_MAX];
+
+  snprintf (path, sizeof (path), "%s/%s", ctx->path, cur->path);
+
+  msg->fp = fopen (path, "r");
+  if (msg->fp == NULL && errno == ENOENT && is_maildir)
+    msg->fp = maildir_open_find_message (ctx->path, cur->path);
+
+  if (!msg->fp)
+  {
+    mutt_perror (path);
+    dprint (1, (debugfile, "maildir_mh_open_message: fopen: %s: %s (errno %d).\n",
+            path, strerror (errno), errno));
+    return -1;
+  }
+
+  return 0;
+}
+
+static int maildir_open_message (CONTEXT *ctx, MESSAGE *msg, int msgno)
+{
+  return maildir_mh_open_message (ctx, msg, msgno, 1);
+}
+
+static int mh_open_message (CONTEXT *ctx, MESSAGE *msg, int msgno)
+{
+  return maildir_mh_open_message (ctx, msg, msgno, 0);
+}
+
+static int mh_close_message (CONTEXT *ctx, MESSAGE *msg)
+{
+  return safe_fclose (&msg->fp);
+}
 
 /*
  * Open a new (temporary) message in a maildir folder.
@@ -1432,7 +1469,7 @@ static int maildir_open_new_message (MESSAGE * msg, CONTEXT * dest, HEADER * hdr
  * 
  */
 
-int maildir_commit_message (CONTEXT * ctx, MESSAGE * msg, HEADER * hdr)
+static int _maildir_commit_message (CONTEXT * ctx, MESSAGE * msg, HEADER * hdr)
 {
   char subdir[4];
   char suffix[16];
@@ -1464,7 +1501,7 @@ int maildir_commit_message (CONTEXT * ctx, MESSAGE * msg, HEADER * hdr)
 	      NONULL (Hostname), suffix);
     snprintf (full, _POSIX_PATH_MAX, "%s/%s", ctx->path, path);
 
-    dprint (2, (debugfile, "maildir_commit_message (): renaming %s to %s.\n",
+    dprint (2, (debugfile, "_maildir_commit_message (): renaming %s to %s.\n",
 		msg->path, full));
 
     if (safe_rename (msg->path, full) == 0)
@@ -1487,7 +1524,7 @@ int maildir_commit_message (CONTEXT * ctx, MESSAGE * msg, HEADER * hdr)
 	ut.modtime = msg->received;
 	if (utime (full, &ut))
 	{
-	  mutt_perror (_("maildir_commit_message(): unable to set time on file"));
+	  mutt_perror (_("_maildir_commit_message(): unable to set time on file"));
 	  return -1;
 	}
       }
@@ -1500,6 +1537,11 @@ int maildir_commit_message (CONTEXT * ctx, MESSAGE * msg, HEADER * hdr)
       return -1;
     }
   }
+}
+
+static int maildir_commit_message (CONTEXT * ctx, MESSAGE * msg)
+{
+  return _maildir_commit_message (ctx, msg, NULL);
 }
 
 /* 
@@ -1583,9 +1625,9 @@ static int _mh_commit_message (CONTEXT * ctx, MESSAGE * msg, HEADER * hdr,
   return 0;
 }
 
-int mh_commit_message (CONTEXT * ctx, MESSAGE * msg, HEADER * hdr)
+static int mh_commit_message (CONTEXT * ctx, MESSAGE * msg)
 {
-  return _mh_commit_message (ctx, msg, hdr, 1);
+  return _mh_commit_message (ctx, msg, NULL, 1);
 }
 
 
@@ -1620,11 +1662,11 @@ static int mh_rewrite_message (CONTEXT * ctx, int msgno)
     strfcpy (partpath, h->path, _POSIX_PATH_MAX);
 
     if (ctx->magic == MUTT_MAILDIR)
-      rc = maildir_commit_message (ctx, dest, h);
+      rc = _maildir_commit_message (ctx, dest, h);
     else
       rc = _mh_commit_message (ctx, dest, h, 0);
 
-    mx_close_message (&dest);
+    mx_close_message (ctx, &dest);
 
     if (rc == 0)
     {
@@ -1655,7 +1697,7 @@ static int mh_rewrite_message (CONTEXT * ctx, int msgno)
     }
   }
   else
-    mx_close_message (&dest);
+    mx_close_message (ctx, &dest);
 
   if (rc == -1 && restore)
   {
@@ -2412,6 +2454,9 @@ int mx_is_mh (const char *path)
 struct mx_ops mx_maildir_ops = {
   .open = maildir_open_mailbox,
   .close = mh_close_mailbox,
+  .open_msg = maildir_open_message,
+  .close_msg = mh_close_message,
+  .commit_msg = maildir_commit_message,
   .open_new_msg = maildir_open_new_message,
   .check = maildir_check_mailbox,
 };
@@ -2419,6 +2464,9 @@ struct mx_ops mx_maildir_ops = {
 struct mx_ops mx_mh_ops = {
   .open = mh_open_mailbox,
   .close = mh_close_mailbox,
+  .open_msg = mh_open_message,
+  .close_msg = mh_close_message,
+  .commit_msg = mh_commit_message,
   .open_new_msg = mh_open_new_message,
   .check = mh_check_mailbox,
 };
