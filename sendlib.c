@@ -903,6 +903,7 @@ CONTENT *mutt_get_content_info (const char *fname, BODY *b)
 	mutt_canonical_charset (chsbuf, sizeof (chsbuf), tocode);
 	mutt_set_parameter ("charset", chsbuf, &b->parameter);
       }
+      FREE (&b->charset);
       b->charset = fromcode;
       FREE (&tocode);
       safe_fclose (&fp);
@@ -1092,6 +1093,7 @@ void mutt_message_to_7bit (BODY *a, FILE *fp)
     return;
 
   a->encoding = ENC7BIT;
+  FREE (&a->d_filename);
   a->d_filename = a->filename;
   if (a->filename && a->unlink)
     unlink (a->filename);
@@ -1141,6 +1143,7 @@ static void transform_to_7bit (BODY *a, FILE *fpin)
       s.fpin = fpin;
       mutt_decode_attachment (a, &s);
       safe_fclose (&s.fpout);
+      FREE (&a->d_filename);
       a->d_filename = a->filename;
       a->filename = safe_strdup (buff);
       a->unlink = 1;
