@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.5.6i\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-04-02 11:15-0700\n"
+"POT-Creation-Date: 2016-07-06 10:39-0700\n"
 "PO-Revision-Date: 2004-03-03 10:25+900\n"
 "Last-Translator: Im Eunjea <eunjea@kldp.org>\n"
 "Language-Team: Im Eunjea <eunjea@kldp.org>\n"
@@ -345,7 +345,7 @@ msgstr "mono: 인수가 부족함"
 msgid "%s: no such attribute"
 msgstr "%s: 속성 없음."
 
-#: color.c:725 hook.c:69 hook.c:77 keymap.c:917
+#: color.c:725 hook.c:69 hook.c:77 keymap.c:921
 msgid "too few arguments"
 msgstr "인수가 부족함"
 
@@ -664,7 +664,7 @@ msgstr "경고: '%s' 잘못된 IDN."
 msgid "You may not delete the only attachment."
 msgstr "첨부물만을 삭제할 수는 없습니다."
 
-#: compose.c:613 send.c:1680
+#: compose.c:613 send.c:1681
 #, c-format
 msgid "Bad IDN in \"%s\": '%s'"
 msgstr "잘못된 IDN \"%s\": '%s'"
@@ -1467,39 +1467,39 @@ msgstr "[-- %s 출력 결과 %s --]\n"
 msgid "Passphrase(s) forgotten."
 msgstr "암호 문구 잊음."
 
-#: crypt.c:149
+#: crypt.c:152
 msgid "Inline PGP can't be used with attachments.  Revert to PGP/MIME?"
 msgstr ""
 
-#: crypt.c:151
+#: crypt.c:154
 msgid "Mail not sent: inline PGP can't be used with attachments."
 msgstr ""
 
-#: crypt.c:158 cryptglue.c:110 pgpkey.c:563 pgpkey.c:753
+#: crypt.c:161 cryptglue.c:110 pgpkey.c:563 pgpkey.c:753
 msgid "Invoking PGP..."
 msgstr "PGP를 구동합니다..."
 
-#: crypt.c:167
+#: crypt.c:170
 msgid "Message can't be sent inline.  Revert to using PGP/MIME?"
 msgstr ""
 
-#: crypt.c:169 send.c:1608
+#: crypt.c:172 send.c:1609
 msgid "Mail not sent."
 msgstr "보내지 않음."
 
-#: crypt.c:482
+#: crypt.c:485
 msgid "S/MIME messages with no hints on content are unsupported."
 msgstr "내용에 S/MIME 표시가 없는 경우는 지원하지 않음."
 
-#: crypt.c:702 crypt.c:746
+#: crypt.c:705 crypt.c:749
 msgid "Trying to extract PGP keys...\n"
 msgstr "PGP 열쇠를 추출하는 중...\n"
 
-#: crypt.c:726 crypt.c:766
+#: crypt.c:729 crypt.c:769
 msgid "Trying to extract S/MIME certificates...\n"
 msgstr "S/MIME 인증서 추출하는 중...\n"
 
-#: crypt.c:913
+#: crypt.c:916
 #, c-format
 msgid ""
 "[-- Error: Unknown multipart/signed protocol %s! --]\n"
@@ -1508,7 +1508,7 @@ msgstr ""
 "[-- 오류: 알 수 없는 multipart/signed 프로토콜 %s! --]\n"
 "\n"
 
-#: crypt.c:947
+#: crypt.c:950
 msgid ""
 "[-- Error: Inconsistent multipart/signed structure! --]\n"
 "\n"
@@ -1516,7 +1516,7 @@ msgstr ""
 "[-- 오류: 일치하지 않는 multipart/signed 구조! --]\n"
 "\n"
 
-#: crypt.c:986
+#: crypt.c:989
 #, c-format
 msgid ""
 "[-- Warning: We can't verify %s/%s signatures. --]\n"
@@ -1525,7 +1525,7 @@ msgstr ""
 "[-- Warning: %s/%s 서명을 확인 할 수 없음 --]\n"
 "\n"
 
-#: crypt.c:998
+#: crypt.c:1001
 msgid ""
 "[-- The following data is signed --]\n"
 "\n"
@@ -1533,7 +1533,7 @@ msgstr ""
 "[-- 아래의 자료는 서명 되었음 --]\n"
 "\n"
 
-#: crypt.c:1004
+#: crypt.c:1007
 msgid ""
 "[-- Warning: Can't find any signatures. --]\n"
 "\n"
@@ -1541,7 +1541,7 @@ msgstr ""
 "[-- 경고: 서명을 찾을 수 없음. --]\n"
 "\n"
 
-#: crypt.c:1010
+#: crypt.c:1013
 msgid ""
 "\n"
 "[-- End of signed data --]\n"
@@ -2645,67 +2645,67 @@ msgstr ""
 msgid "out of arguments"
 msgstr "인수가 부족함"
 
-#: keymap.c:534
+#: keymap.c:538
 msgid "Macros are currently disabled."
 msgstr ""
 
-#: keymap.c:541
+#: keymap.c:545
 msgid "Macro loop detected."
 msgstr "매크로 루프가 발생."
 
-#: keymap.c:842 keymap.c:850
+#: keymap.c:846 keymap.c:854
 msgid "Key is not bound."
 msgstr "정의되지 않은 글쇠."
 
-#: keymap.c:854
+#: keymap.c:858
 #, c-format
 msgid "Key is not bound.  Press '%s' for help."
 msgstr "정의되지 않은 글쇠. 도움말 보기는 '%s'"
 
-#: keymap.c:865
+#: keymap.c:869
 msgid "push: too many arguments"
 msgstr "push: 인수가 너무 많음"
 
-#: keymap.c:895
+#: keymap.c:899
 #, c-format
 msgid "%s: no such menu"
 msgstr "%s: 그런 메뉴 없음"
 
-#: keymap.c:910
+#: keymap.c:914
 msgid "null key sequence"
 msgstr "공백 글쇠 시퀀스"
 
-#: keymap.c:997
+#: keymap.c:1001
 msgid "bind: too many arguments"
 msgstr "bind: 인수가 너무 많음"
 
-#: keymap.c:1020
+#: keymap.c:1024
 #, c-format
 msgid "%s: no such function in map"
 msgstr "%s: 맵에 그런 기능 없음"
 
-#: keymap.c:1044
+#: keymap.c:1048
 msgid "macro: empty key sequence"
 msgstr "macro: 빈 글쇠 시퀀스"
 
-#: keymap.c:1055
+#: keymap.c:1059
 msgid "macro: too many arguments"
 msgstr "macro: 인수가 너무 많음"
 
-#: keymap.c:1091
+#: keymap.c:1095
 msgid "exec: no arguments"
 msgstr "exec: 인수가 없음"
 
-#: keymap.c:1111
+#: keymap.c:1115
 #, c-format
 msgid "%s: no such function"
 msgstr "%s: 그런 기능 없음"
 
-#: keymap.c:1132
+#: keymap.c:1136
 msgid "Enter keys (^G to abort): "
 msgstr "키 입력 (^G 취소): "
 
-#: keymap.c:1137
+#: keymap.c:1141
 #, c-format
 msgid "Char = %s, Octal = %o, Decimal = %d"
 msgstr "Char = %s, Octal = %o, Decimal = %d"
@@ -4261,44 +4261,44 @@ msgstr "변경되지 않은 메일을 취소할까요?"
 msgid "Aborted unmodified message."
 msgstr "변경되지 않은 메일 취소함."
 
-#: send.c:1657
+#: send.c:1658
 msgid "Message postponed."
 msgstr "발송 연기됨."
 
-#: send.c:1668
+#: send.c:1669
 msgid "No recipients are specified!"
 msgstr "수신자가 지정되지 않음!"
 
-#: send.c:1673
+#: send.c:1674
 msgid "No recipients were specified."
 msgstr "수신자가 지정되지 않음."
 
-#: send.c:1689
+#: send.c:1690
 msgid "No subject, abort sending?"
 msgstr "제목 없음, 보내기를 취소할까요?"
 
-#: send.c:1693
+#: send.c:1694
 msgid "No subject specified."
 msgstr "제목이 지정되지 않음."
 
-#: send.c:1755 smtp.c:188
+#: send.c:1756 smtp.c:188
 msgid "Sending message..."
 msgstr "메일 보내는 중..."
 
-#: send.c:1788
+#: send.c:1789
 #, fuzzy
 msgid "Save attachments in Fcc?"
 msgstr "첨부물을 text로 보기"
 
-#: send.c:1897
+#: send.c:1899
 msgid "Could not send the message."
 msgstr "메일을 보낼 수 없음."
 
-#: send.c:1902
+#: send.c:1904
 msgid "Mail sent."
 msgstr "메일 보냄."
 
-#: send.c:1902
+#: send.c:1904
 msgid "Sending in background."
 msgstr "백그라운드로 보냄."
 
