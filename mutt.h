@@ -181,6 +181,7 @@ enum
   MUTT_UNREAD,
   MUTT_DELETE,
   MUTT_UNDELETE,
+  MUTT_PURGE,
   MUTT_DELETED,
   MUTT_FLAG,
   MUTT_TAG,
@@ -188,6 +189,7 @@ enum
   MUTT_LIMIT,
   MUTT_EXPIRED,
   MUTT_SUPERSEDED,
+  MUTT_TRASH,
 
   /* actions for mutt_pattern_comp/mutt_pattern_exec */
   MUTT_AND,
@@ -728,6 +730,7 @@ typedef struct header
   unsigned int flagged : 1; 		/* marked important? */
   unsigned int tagged : 1;
   unsigned int deleted : 1;
+  unsigned int purge : 1;               /* skip trash folder when deleting */
   unsigned int changed : 1;
   unsigned int attach_del : 1; 		/* has an attachment marked for deletion */
   unsigned int old : 1;
