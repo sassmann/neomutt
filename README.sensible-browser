@@ -10,7 +10,7 @@ Patch
     "patch-sensible-browser" in the mutt version.
 
     Dependencies
-    * mutt-1.5.24
+    * mutt-1.6.2
 
 Introduction
 ------------
