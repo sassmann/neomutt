@@ -481,122 +481,37 @@ static int mx_open_mailbox_append (CONTEXT *ctx, int flags)
   struct stat sb;
 
   ctx->append = 1;
-
-#ifdef USE_IMAP
-  
-  if(mx_is_imap(ctx->path))  
-    return imap_open_mailbox_append (ctx);
-
-#endif
-  
-  if(stat(ctx->path, &sb) == 0)
+  ctx->magic = mx_get_magic (ctx->path);
+  if (ctx->magic == 0)
   {
-    ctx->magic = mx_get_magic (ctx->path);
-    
-    switch (ctx->magic)
-    {
-      case 0:
-	mutt_error (_("%s is not a mailbox."), ctx->path);
-	/* fall through */
-      case -1:
-	return (-1);
-    }
+    mutt_error (_("%s is not a mailbox."), ctx->path);
+    return -1;
   }
-  else if (errno == ENOENT)
+
+  if (ctx->magic < 0)
   {
-    ctx->magic = DefaultMagic;
-
-    if (ctx->magic == MUTT_MH || ctx->magic == MUTT_MAILDIR)
+    if (stat (ctx->path, &sb) == -1)
     {
-      char tmp[_POSIX_PATH_MAX];
-
-      if (mkdir (ctx->path, S_IRWXU))
+      if (errno == ENOENT)
       {
-	mutt_perror (ctx->path);
-	return (-1);
-      }
-
-      if (ctx->magic == MUTT_MAILDIR)
-      {
-	snprintf (tmp, sizeof (tmp), "%s/cur", ctx->path);
-	if (mkdir (tmp, S_IRWXU))
-	{
-	  mutt_perror (tmp);
-	  rmdir (ctx->path);
-	  return (-1);
-	}
-
-	snprintf (tmp, sizeof (tmp), "%s/new", ctx->path);
-	if (mkdir (tmp, S_IRWXU))
-	{
-	  mutt_perror (tmp);
-	  snprintf (tmp, sizeof (tmp), "%s/cur", ctx->path);
-	  rmdir (tmp);
-	  rmdir (ctx->path);
-	  return (-1);
-	}
-	snprintf (tmp, sizeof (tmp), "%s/tmp", ctx->path);
-	if (mkdir (tmp, S_IRWXU))
-	{
-	  mutt_perror (tmp);
-	  snprintf (tmp, sizeof (tmp), "%s/cur", ctx->path);
-	  rmdir (tmp);
-	  snprintf (tmp, sizeof (tmp), "%s/new", ctx->path);
-	  rmdir (tmp);
-	  rmdir (ctx->path);
-	  return (-1);
-	}
+        ctx->magic = DefaultMagic;
+        flags |= MUTT_APPENDNEW;
       }
       else
       {
-	int i;
-
-	snprintf (tmp, sizeof (tmp), "%s/.mh_sequences", ctx->path);
-	if ((i = creat (tmp, S_IRWXU)) == -1)
-	{
-	  mutt_perror (tmp);
-	  rmdir (ctx->path);
-	  return (-1);
-	}
-	close (i);
+        mutt_perror (ctx->path);
+        return -1;
       }
     }
-  }
-  else
-  {
-    mutt_perror (ctx->path);
-    return (-1);
+    else
+      return -1;
   }
 
-  switch (ctx->magic)
-  {
-    case MUTT_MBOX:
-    case MUTT_MMDF:
-    if ((ctx->fp = safe_fopen (ctx->path, flags & MUTT_NEWFOLDER ? "w" : "a")) == NULL ||
-	  mbox_lock_mailbox (ctx, 1, 1) != 0)
-      {
-	if (!ctx->fp)
-	  mutt_perror (ctx->path);
-	else
-	{
-	  mutt_error (_("Couldn't lock %s\n"), ctx->path);
-	  safe_fclose (&ctx->fp);
-	}
-	return (-1);
-      }
-      fseek (ctx->fp, 0, 2);
-      break;
+  ctx->mx_ops = mx_get_ops (ctx->magic);
+  if (!ctx->mx_ops || !ctx->mx_ops->open_append)
+    return -1;
 
-    case MUTT_MH:
-    case MUTT_MAILDIR:
-      /* nothing to do */
-      break;
-
-    default:
-      return (-1);
-  }
-
-  return 0;
+  return ctx->mx_ops->open_append (ctx, flags);
 }
 
 /* close a mailbox opened in write-mode */
@@ -1423,7 +1338,6 @@ MESSAGE *mx_open_message (CONTEXT *ctx, int msgno)
 int mx_commit_message (MESSAGE *msg, CONTEXT *ctx)
 {
   struct mx_ops *ops = mx_get_ops (ctx->magic);
-  int r = 0;
 
   if (!ops || !ops->commit_msg)
     return -1;
@@ -1435,16 +1349,7 @@ int mx_commit_message (MESSAGE *msg, CONTEXT *ctx)
     return -1;
   }
 
-  r = ops->commit_msg (ctx, msg);
-  
-  if (r == 0 && (ctx->magic == MUTT_MBOX || ctx->magic == MUTT_MMDF)
-      && (fflush (msg->fp) == EOF || fsync (fileno (msg->fp)) == -1))
-  {
-    mutt_perror _("Can't write message");
-    r = -1;
-  }
- 
-  return r;
+  return ops->commit_msg (ctx, msg);
 }
 
 /* close a pointer to a message */

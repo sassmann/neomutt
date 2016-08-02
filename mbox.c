@@ -442,6 +442,27 @@ static int mbox_open_mailbox (CONTEXT *ctx)
   return (rc);
 }
 
+static int mbox_open_mailbox_append (CONTEXT *ctx, int flags)
+{
+  ctx->fp = safe_fopen (ctx->path, flags & MUTT_NEWFOLDER ? "w" : "a");
+  if (!ctx->fp)
+  {
+    mutt_perror (ctx->path);
+    return -1;
+  }
+
+  if (mbox_lock_mailbox (ctx, 1, 1) != 0)
+  {
+    mutt_error (_("Couldn't lock %s\n"), ctx->path);
+    safe_fclose (&ctx->fp);
+    return -1;
+  }
+
+  fseek (ctx->fp, 0, 2);
+
+  return 0;
+}
+
 static int mbox_close_mailbox (CONTEXT *ctx)
 {
   return 0;
@@ -463,20 +484,30 @@ static int mbox_close_message (CONTEXT *ctx, MESSAGE *msg)
 
 static int mbox_commit_message (CONTEXT *ctx, MESSAGE *msg)
 {
-  int r = fputc ('\n', msg->fp);
-
-  if (r == EOF)
+  if (fputc ('\n', msg->fp) == EOF)
     return -1;
+
+  if ((fflush (msg->fp) == EOF) ||
+      (fsync (fileno (msg->fp)) == -1))
+  {
+    mutt_perror _("Can't write message");
+    return -1;
+  }
 
   return 0;
 }
 
 static int mmdf_commit_message (CONTEXT *ctx, MESSAGE *msg)
 {
-  int r = fputs (MMDF_SEP, msg->fp);
-
-  if (r == EOF)
+  if (fputs (MMDF_SEP, msg->fp) == EOF)
     return -1;
+
+  if ((fflush (msg->fp) == EOF) ||
+      (fsync (fileno (msg->fp)) == -1))
+  {
+    mutt_perror _("Can't write message");
+    return -1;
+  }
 
   return 0;
 }
@@ -1308,6 +1339,7 @@ int mbox_check_empty (const char *path)
 
 struct mx_ops mx_mbox_ops = {
   .open = mbox_open_mailbox,
+  .open_append = mbox_open_mailbox_append,
   .close = mbox_close_mailbox,
   .open_msg = mbox_open_message,
   .close_msg = mbox_close_message,
@@ -1318,6 +1350,7 @@ struct mx_ops mx_mbox_ops = {
 
 struct mx_ops mx_mmdf_ops = {
   .open = mbox_open_mailbox,
+  .open_append = mbox_open_mailbox_append,
   .close = mbox_close_mailbox,
   .open_msg = mbox_open_message,
   .close_msg = mbox_close_message,
