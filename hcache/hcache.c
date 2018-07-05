@@ -830,7 +830,6 @@ static void *hcache_dump(header_cache_t *h, struct Header *header, int *off,
   nh.recipient = 0;
   nh.pair = 0;
   nh.attach_valid = false;
-  nh.path = NULL;
   nh.tree = NULL;
   nh.thread = NULL;
   STAILQ_INIT(&nh.tags);
@@ -848,6 +847,7 @@ static void *hcache_dump(header_cache_t *h, struct Header *header, int *off,
   d = dump_body(nh.content, d, off, convert);
   d = dump_char(nh.maildir_flags, d, off, convert);
 
+  d = dump_char(nh.path, d, off, convert);
   return d;
 }
 
@@ -881,6 +881,8 @@ struct Header *mutt_hcache_restore(const unsigned char *d, struct Header *h)
   restore_body(h->content, d, &off, convert);
 
   restore_char(&h->maildir_flags, d, &off, convert);
+
+  restore_char(&h->path, d, &off, convert);
 
   return h;
 }
