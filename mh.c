@@ -1292,16 +1292,6 @@ static void maildir_delayed_parsing(struct Context *ctx, struct Maildir **md,
   char fn[PATH_MAX];
   int count;
   int sort = 0;
-#ifdef USE_HCACHE
-  const char *key = NULL;
-  size_t keylen;
-  struct stat lastchanged;
-  int ret;
-#endif
-
-#ifdef USE_HCACHE
-  header_cache_t *hc = mutt_hcache_open(HeaderCache, ctx->path, NULL);
-#endif
 
   for (p = *md, count = 0; p; p = p->next, count++)
   {
@@ -1329,7 +1319,65 @@ static void maildir_delayed_parsing(struct Context *ctx, struct Maildir **md,
 
     snprintf(fn, sizeof(fn), "%s/%s", ctx->path, p->h->path);
 
+    if (maildir_parse_message(ctx->magic, fn, p->h->old, p->h))
+    {
+      p->header_parsed = 1;
+    }
+    else
+      mutt_header_free(&p->h);
+    last = p;
+  }
+
+  mh_sort_natural(ctx, md);
+}
+
 #ifdef USE_HCACHE
+/**
+ * maildir_delayed_parsing_hcache - This function does the second parsing pass
+ * @param ctx      Mailbox
+ * @param md       Maildir to parse
+ * @param progress Progress bar
+ */
+static void maildir_delayed_parsing_hcache(struct Context *ctx, struct Maildir **md,
+    struct Progress *progress)
+{
+  struct Maildir *p, *last = NULL;
+  char fn[PATH_MAX];
+  int count;
+  int sort = 0;
+  const char *key = NULL;
+  size_t keylen;
+  struct stat lastchanged;
+  int ret;
+
+  header_cache_t *hc = mutt_hcache_open(HeaderCache, ctx->path, NULL);
+
+  for (p = *md, count = 0; p; p = p->next, count++)
+  {
+    if (!(p && p->h && !p->header_parsed))
+    {
+      last = p;
+      continue;
+    }
+
+    if (!ctx->quiet && progress)
+      mutt_progress_update(progress, count, -1);
+
+    if (!sort)
+    {
+      mutt_debug(4, "maildir: need to sort %s by inode\n", ctx->path);
+      p = maildir_sort(p, (size_t) -1, md_cmp_inode);
+      if (!last)
+        *md = p;
+      else
+        last->next = p;
+      sort = 1;
+      p = skip_duplicates(p, &last);
+      snprintf(fn, sizeof(fn), "%s/%s", ctx->path, p->h->path);
+    }
+
+    snprintf(fn, sizeof(fn), "%s/%s", ctx->path, p->h->path);
+
     if (MaildirHeaderCacheVerify)
     {
       ret = stat(fn, &lastchanged);
@@ -1361,12 +1409,10 @@ static void maildir_delayed_parsing(struct Context *ctx, struct Maildir **md,
     }
     else
     {
-#endif
 
       if (maildir_parse_message(ctx->magic, fn, p->h->old, p->h))
       {
         p->header_parsed = 1;
-#ifdef USE_HCACHE
         if (ctx->magic == MUTT_MH)
         {
           key = p->h->path;
@@ -1378,22 +1424,18 @@ static void maildir_delayed_parsing(struct Context *ctx, struct Maildir **md,
           keylen = maildir_hcache_keylen(key);
         }
         mutt_hcache_store(hc, key, keylen, p->h, 0);
-#endif
       }
       else
         mutt_header_free(&p->h);
-#ifdef USE_HCACHE
     }
     mutt_hcache_free(hc, &data);
-#endif
     last = p;
   }
-#ifdef USE_HCACHE
   mutt_hcache_close(hc);
-#endif
 
   mh_sort_natural(ctx, md);
 }
+#endif
 
 /**
  * mh_mbox_close - Implements MxOps::mbox_close()
@@ -1449,8 +1491,11 @@ static int mh_read_dir(struct Context *ctx, const char *subdir)
     snprintf(msgbuf, sizeof(msgbuf), _("Reading %s..."), ctx->path);
     mutt_progress_init(&progress, msgbuf, MUTT_PROGRESS_MSG, ReadInc, count);
   }
+#ifdef USE_HCACHE
+  maildir_delayed_parsing_hcache(ctx, &md, &progress);
+#else
   maildir_delayed_parsing(ctx, &md, &progress);
-
+#endif
   if (ctx->magic == MUTT_MH)
   {
     if (mh_read_sequences(&mhs, ctx->path) < 0)
@@ -2428,7 +2473,11 @@ static int maildir_mbox_check(struct Context *ctx, int *index_hint)
     maildir_update_tables(ctx, index_hint);
 
   /* do any delayed parsing we need to do. */
+#ifdef USE_HCACHE
+  maildir_delayed_parsing_hcache(ctx, &md, NULL);
+#else
   maildir_delayed_parsing(ctx, &md, NULL);
+#endif
 
   /* Incorporate new messages */
   have_new = maildir_move_to_context(ctx, &md);
@@ -2505,7 +2554,11 @@ static int mh_mbox_check(struct Context *ctx, int *index_hint)
   last = &md;
 
   maildir_parse_dir(ctx, &last, NULL, &count, NULL);
+#ifdef USE_HCACHE
+  maildir_delayed_parsing_hcache(ctx, &md, NULL);
+#else
   maildir_delayed_parsing(ctx, &md, NULL);
+#endif
 
   if (mh_read_sequences(&mhs, ctx->path) < 0)
     return -1;
