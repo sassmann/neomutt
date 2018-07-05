@@ -854,13 +854,16 @@ static void *hcache_dump(header_cache_t *h, struct Header *header, int *off,
 /**
  * mutt_hcache_restore - Deserialise a Header object
  * @param d Binary blob
+ * @param h handle for Header
  * @retval ptr Reconstructed Header
  */
-struct Header *mutt_hcache_restore(const unsigned char *d)
+struct Header *mutt_hcache_restore(const unsigned char *d, struct Header *h)
 {
   int off = 0;
-  struct Header *h = mutt_header_new();
   bool convert = !CharsetIsUtf8;
+
+  if (!h)
+    h = mutt_header_new();
 
   /* skip validate */
   off += sizeof(union Validate);

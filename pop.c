@@ -389,7 +389,7 @@ static int pop_fetch_headers(struct Context *ctx)
          *   (the old h->data should point inside a malloc'd block from
          *   hcache so there shouldn't be a memleak here)
          */
-        struct Header *h = mutt_hcache_restore((unsigned char *) data);
+        struct Header *h = mutt_hcache_restore((unsigned char *) data, NULL);
         mutt_hcache_free(hc, &data);
         mutt_header_free(&ctx->hdrs[i]);
         ctx->hdrs[i] = h;

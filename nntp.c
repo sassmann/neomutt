@@ -1198,7 +1198,7 @@ static int parse_overview_line(char *line, void *data)
     {
       mutt_debug(2, "mutt_hcache_fetch %s\n", buf);
       mutt_header_free(&hdr);
-      ctx->hdrs[ctx->msgcount] = hdr = mutt_hcache_restore(hdata);
+      ctx->hdrs[ctx->msgcount] = hdr = mutt_hcache_restore(hdata, NULL);
       mutt_hcache_free(fc->hc, &hdata);
       hdr->data = 0;
       hdr->read = false;
@@ -1367,7 +1367,7 @@ static int nntp_fetch_headers(struct Context *ctx, void *hc, anum_t first,
     if (hdata)
     {
       mutt_debug(2, "mutt_hcache_fetch %s\n", buf);
-      ctx->hdrs[ctx->msgcount] = hdr = mutt_hcache_restore(hdata);
+      ctx->hdrs[ctx->msgcount] = hdr = mutt_hcache_restore(hdata, NULL);
       mutt_hcache_free(fc.hc, &hdata);
       hdr->data = 0;
 
@@ -1977,7 +1977,7 @@ static int check_mailbox(struct Context *ctx)
           bool deleted;
 
           mutt_debug(2, "#1 mutt_hcache_fetch %s\n", buf);
-          hdr = mutt_hcache_restore(hdata);
+          hdr = mutt_hcache_restore(hdata, NULL);
           mutt_hcache_free(hc, &hdata);
           hdr->data = 0;
           deleted = hdr->deleted;
@@ -2024,7 +2024,7 @@ static int check_mailbox(struct Context *ctx)
         if (ctx->msgcount >= ctx->hdrmax)
           mx_alloc_memory(ctx);
 
-        ctx->hdrs[ctx->msgcount] = hdr = mutt_hcache_restore(hdata);
+        ctx->hdrs[ctx->msgcount] = hdr = mutt_hcache_restore(hdata, NULL);
         mutt_hcache_free(hc, &hdata);
         hdr->data = 0;
         if (hdr->deleted)

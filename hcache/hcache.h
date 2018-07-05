@@ -111,12 +111,13 @@ void mutt_hcache_free(header_cache_t *h, void **data);
 /**
  * mutt_hcache_restore - restore a Header from data retrieved from the cache
  * @param d Data retrieved using mutt_hcache_fetch or mutt_hcache_fetch_raw
+ * @param h handle for Header
  * @retval ptr Success, the restored header (cannot be NULL)
  *
  * @note The returned Header must be free'd by caller code with
  *       mutt_header_free().
  */
-struct Header *mutt_hcache_restore(const unsigned char *d);
+struct Header *mutt_hcache_restore(const unsigned char *d, struct Header *h);
 
 /**
  * mutt_hcache_store - store a Header along with a validity datum

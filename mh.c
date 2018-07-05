@@ -1355,11 +1355,11 @@ static void maildir_delayed_parsing(struct Context *ctx, struct Maildir **md,
 
     if (data != NULL && !ret && lastchanged.st_mtime <= when->tv_sec)
     {
-      struct Header *h = mutt_hcache_restore((unsigned char *) data);
-      h->old = p->h->old;
-      h->path = mutt_str_strdup(p->h->path);
-      mutt_header_free(&p->h);
-      p->h = h;
+      int old = p->h->old;
+      char *path = p->h->path;
+      p->h = mutt_hcache_restore((unsigned char *) data, p->h);
+      p->h->old = old;
+      p->h->path = path;
       if (ctx->magic == MUTT_MAILDIR)
         maildir_parse_flags(p->h, fn);
     }

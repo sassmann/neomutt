@@ -286,7 +286,7 @@ struct Header *imap_hcache_get(struct ImapData *idata, unsigned int uid)
   if (uv)
   {
     if (*(unsigned int *) uv == idata->uid_validity)
-      h = mutt_hcache_restore(uv);
+      h = mutt_hcache_restore(uv, NULL);
     else
       mutt_debug(3, "hcache uidvalidity mismatch: %u\n", *(unsigned int *) uv);
     mutt_hcache_free(idata->hcache, &uv);
