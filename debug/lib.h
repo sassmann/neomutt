@@ -27,6 +27,11 @@
 #include "mutt/mutt.h"
 #include "core/lib.h"
 
+// Graphviz
+#ifdef USE_DEVEL_GRAPHVIZ
+void dump_graphviz(const char *title);
+#endif
+
 // Parse Set
 void test_parse_set(void);
 
