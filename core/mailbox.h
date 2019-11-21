@@ -80,6 +80,7 @@ typedef uint16_t AclFlags;          ///< Flags, e.g. #MUTT_ACL_ADMIN
 struct Mailbox
 {
   struct Buffer pathbuf;
+  struct Context *ctx;                ///< Store context for re-use
   char *realpath;                     ///< Used for duplicate detection, context comparison, and the sidebar
   char *name;                         ///< A short name for the Mailbox
   struct ConfigSubset *sub;           ///< Inherited config items

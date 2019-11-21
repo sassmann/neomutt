@@ -253,11 +253,23 @@ static int mx_open_mailbox_append(struct Mailbox *m, OpenMailboxFlags flags)
  */
 struct Context *mx_mbox_open(struct Mailbox *m, OpenMailboxFlags flags)
 {
+  struct Context *ctx;
+
   if (!m)
     return NULL;
 
-  struct Context *ctx = ctx_new();
+  if (C_KeepCtx && m->opened)
+  {
+    int index_hint = 0;
+    mailbox_changed(m, NT_MAILBOX_UPDATE);
+    mx_mbox_check(m, &index_hint);
+
+    return m->ctx;
+  }
+
+  ctx = ctx_new();
   ctx->mailbox = m;
+  m->ctx = ctx;
 
   struct EventContext ev_ctx = { ctx };
   notify_send(ctx->notify, NT_CONTEXT, NT_CONTEXT_OPEN, &ev_ctx);
@@ -426,6 +438,9 @@ void mx_fastclose_mailbox(struct Mailbox *m)
 
   if (m->mx_ops)
     m->mx_ops->mbox_close(m);
+
+  if (C_KeepCtx)
+    return;
 
   mutt_hash_free(&m->subj_hash);
   mutt_hash_free(&m->id_hash);
@@ -605,8 +620,18 @@ int mx_mbox_close(struct Context **ptr)
 
   if (m->readonly || m->dontwrite || m->append || m->peekonly)
   {
-    mx_fastclose_mailbox(m);
-    ctx_free(ptr);
+    if (C_KeepCtx)
+    {
+      int index_hint = 0;
+      mx_mbox_sync(m, &index_hint);
+    }
+    else
+    {
+      mx_fastclose_mailbox(m);
+      m->ctx = NULL;
+      ctx_free(ptr);
+    }
+
     return 0;
   }
 
@@ -784,8 +809,11 @@ int mx_mbox_close(struct Context **ptr)
       mutt_message(_("Mailbox is unchanged"));
     if ((m->magic == MUTT_MBOX) || (m->magic == MUTT_MMDF))
       mbox_reset_atime(m, NULL);
-    mx_fastclose_mailbox(m);
-    ctx_free(ptr);
+    if (!C_KeepCtx)
+    {
+      mx_fastclose_mailbox(m);
+      ctx_free(ptr);
+    }
     rc = 0;
     goto cleanup;
   }
@@ -874,8 +902,16 @@ int mx_mbox_close(struct Context **ptr)
   }
 #endif
 
-  mx_fastclose_mailbox(m);
-  ctx_free(ptr);
+  if (C_KeepCtx)
+  {
+    mailbox_changed(m, NT_MAILBOX_UPDATE);
+    mailbox_changed(m, NT_MAILBOX_RESORT);
+  }
+  else
+  {
+    mx_fastclose_mailbox(m);
+    ctx_free(ptr);
+  }
 
   rc = 0;
 
