@@ -79,6 +79,7 @@
 
 /* These Config Variables are only used in mx.c */
 unsigned char C_CatchupNewsgroup; ///< Config: (nntp) Mark all articles as read when leaving a newsgroup
+bool C_KeepCtx; ///< Config: Keep Context in memory
 bool C_KeepFlagged; ///< Config: Don't move flagged messages from #C_Spoolfile to #C_Mbox
 unsigned char C_MboxType; ///< Config: Default type for creating new mailboxes
 unsigned char C_Move; ///< Config: Move emails from #C_Spoolfile to #C_Mbox when read
