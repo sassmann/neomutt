@@ -1946,6 +1946,13 @@ struct ConfigDef MuttVars[] = {
   ** .pp
   ** How to invoke ispell (GNU's spell-checking software).
   */
+  { "keep_ctx", DT_BOOL, &C_KeepCtx, false },
+  /*
+  ** .pp
+  ** If \fIset\fP, mailbox contents are kept in memory, instead of
+  ** being discarded on mailbox switch. Warning, experimental and
+  ** tested with maildir only.
+  */
   { "keep_flagged", DT_BOOL, &C_KeepFlagged, false },
   /*
   ** .pp
