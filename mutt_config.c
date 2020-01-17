@@ -319,6 +319,9 @@ struct ConfigDef MainVars[] = {
   { "ispell", DT_STRING|DT_COMMAND, &C_Ispell, IP ISPELL, 0, NULL,
     "External command to perform spell-checking"
   },
+  { "keep_ctx", DT_BOOL, &C_KeepCtx, false, 0, NULL,
+    "If \fIset\fP, mailbox contents are kept in memory"
+  },
   { "keep_flagged", DT_BOOL, &C_KeepFlagged, false, 0, NULL,
     "Don't move flagged messages from #C_Spoolfile to #C_Mbox"
   },
