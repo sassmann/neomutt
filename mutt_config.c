@@ -412,6 +412,9 @@ struct ConfigDef MainVars[] = {
   { "index_format", DT_STRING|DT_NOT_EMPTY|R_INDEX|R_PAGER, &C_IndexFormat, IP "%4C %Z %{%b %d} %-15.15L (%?l?%4l&%4c?) %s", 0, NULL,
     "printf-like format string for the index menu (emails)"
   },
+  { "keep_ctx", DT_BOOL, &C_KeepCtx, false, 0, NULL,
+    "If \fIset\fP, mailbox contents are kept in memory"
+  },
   { "keep_flagged", DT_BOOL, &C_KeepFlagged, false, 0, NULL,
     "Don't move flagged messages from `$spoolfile` to `$mbox`"
   },

@@ -80,6 +80,7 @@
 #endif
 
 /* These Config Variables are only used in mx.c */
+bool C_KeepCtx; ///< Config: Keep Context in memory
 bool C_KeepFlagged; ///< Config: Don't move flagged messages from `$spoolfile` to `$mbox`
 unsigned char C_MboxType; ///< Config: Default type for creating new mailboxes
 unsigned char C_Move; ///< Config: Move emails from `$spoolfile` to `$mbox` when read
