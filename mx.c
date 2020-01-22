@@ -258,7 +258,7 @@ struct Context *mx_mbox_open(struct Mailbox *m, OpenMailboxFlags flags)
   if (!m)
     return NULL;
 
-  if (C_KeepCtx && m->opened)
+  if (C_KeepCtx && m->opened && (((flags & (MUTT_APPEND | MUTT_NEWFOLDER)) == 0)))
   {
     int index_hint = 0;
     mailbox_changed(m, NT_MAILBOX_UPDATE);
@@ -269,7 +269,8 @@ struct Context *mx_mbox_open(struct Mailbox *m, OpenMailboxFlags flags)
 
   ctx = ctx_new();
   ctx->mailbox = m;
-  m->ctx = ctx;
+  if (!m->opened)
+    m->ctx = ctx;
 
   struct EventContext ev_ctx = { ctx };
   notify_send(ctx->notify, NT_CONTEXT, NT_CONTEXT_OPEN, &ev_ctx);
@@ -428,7 +429,7 @@ void mx_fastclose_mailbox(struct Mailbox *m)
     return;
 
   m->opened--;
-  if (m->opened != 0)
+  if (m->opened < 0 && m->opened > 1) /* 1 if the mailbox appended to is already open */
     return;
 
   /* never announce that a mailbox we've just left has new mail.
@@ -439,7 +440,8 @@ void mx_fastclose_mailbox(struct Mailbox *m)
   if (m->mx_ops)
     m->mx_ops->mbox_close(m);
 
-  if (C_KeepCtx)
+  /* keep mails for C_KeepCtx with exception of append */
+  if (C_KeepCtx && !m->append)
     return;
 
   mutt_hash_free(&m->subj_hash);
@@ -620,7 +622,7 @@ int mx_mbox_close(struct Context **ptr)
 
   if (m->readonly || m->dontwrite || m->append || m->peekonly)
   {
-    if (C_KeepCtx)
+    if (C_KeepCtx && (!m->append))
     {
       int index_hint = 0;
       mx_mbox_sync(m, &index_hint);
@@ -628,7 +630,8 @@ int mx_mbox_close(struct Context **ptr)
     else
     {
       mx_fastclose_mailbox(m);
-      m->ctx = NULL;
+      if (!m->opened)
+        m->ctx = NULL;
       ctx_free(ptr);
     }
 
