@@ -446,6 +446,8 @@ int maildir_move_to_mailbox(struct Mailbox *m, struct Maildir **ptr)
     m->emails[m->msg_count]->index = m->msg_count;
     mailbox_size_add(m, md->email);
 
+    mutt_debug(LL_DEBUG1, "at %d (%s)\n", m->msg_count, m->realpath);
+
     md->email = NULL;
     m->msg_count++;
   }
