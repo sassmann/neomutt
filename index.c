@@ -738,6 +738,12 @@ static int main_change_folder(struct Menu *menu, int op, struct Mailbox *m,
       new_last_folder = mutt_str_strdup(mailbox_path(Context->mailbox));
     *oldcount = Context->mailbox->msg_count;
 
+    /* FIXME: this should not happen */
+    if (Context->mailbox->msg_deleted && Context->mailbox->changed == false)
+    {
+        mutt_debug(LL_DEBUG1, "%s Context->mailbox->changed %d\n", Context->mailbox->realpath, Context->mailbox->changed);
+        Context->mailbox->changed = true;
+    }
     int check = mx_mbox_close(&Context);
     if (check != 0)
     {
