@@ -444,6 +444,12 @@ void mx_fastclose_mailbox(struct Mailbox *m)
   if (C_KeepCtx && !m->append)
     return;
 
+  /* special case to not free mails from the current mailbox */
+  if (C_KeepCtx && (Context->mailbox == m))
+  {
+    return;
+  }
+
   mutt_hash_free(&m->subj_hash);
   mutt_hash_free(&m->id_hash);
   mutt_hash_free(&m->label_hash);
