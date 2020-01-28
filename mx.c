@@ -346,6 +346,14 @@ struct Context *mx_mbox_open(struct Mailbox *m, OpenMailboxFlags flags)
   ctx->msg_in_pager = -1;
   ctx->collapsed = false;
 
+  if (C_KeepCtx && m->opened && ((flags & (MUTT_APPEND | MUTT_NEWFOLDER)) == 0))
+  {
+     /* update tables, they may have changed in the background */
+     mailbox_changed(m, NT_MAILBOX_UPDATE);
+
+     return ctx;
+  }
+
   m->verbose = !(flags & MUTT_QUIET);
   if (flags & MUTT_READONLY)
     m->readonly = true;
@@ -461,7 +469,11 @@ void mx_fastclose_mailbox(struct Mailbox *m)
   if (!m)
     return;
 
-  m->opened--;
+  if (!C_KeepCtx || (C_KeepCtx && m->append))
+  {
+    m->opened--;
+  }
+
   if (m->opened != 0)
     return;
 
