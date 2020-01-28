@@ -215,7 +215,7 @@ void ctx_update_tables(struct Context *ctx, bool committing)
   m->changed = false;
   m->msg_flagged = 0;
   padding = mx_msg_padding_size(m);
-  for (i = 0, j = 0; i < m->msg_count; i++)
+  for (i = 0, j = 0; i < m->msg_count && i < m->email_max; i++)
   {
     if (!m->emails[i])
       break;

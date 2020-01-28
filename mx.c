@@ -297,6 +297,16 @@ struct Context *mx_mbox_open(struct Mailbox *m, OpenMailboxFlags flags)
     }
   }
 
+  if (C_KeepCtx && m->opened && ((flags & (MUTT_APPEND | MUTT_NEWFOLDER)) == 0))
+  {
+     /* update tables, rebuild the context and resort, in that order */
+     ctx_update_tables(ctx, true);
+     ctx_update(ctx);
+     mutt_sort_headers(ctx, true);
+
+     return ctx;
+  }
+
   ctx->msg_not_read_yet = -1;
   ctx->collapsed = false;
 
@@ -414,8 +424,11 @@ void mx_fastclose_mailbox(struct Mailbox *m)
 {
   if (!m)
     return;
+  if (!C_KeepCtx || (C_KeepCtx && m->append))
+  {
+    m->opened--;
+  }
 
-  m->opened--;
   if (m->opened != 0)
     return;
 
@@ -873,6 +886,12 @@ int mx_mbox_close(struct Context **ptr)
     }
   }
 #endif
+
+  if (C_KeepCtx)
+  {
+    mailbox_changed(m, NT_MAILBOX_UPDATE);
+    mailbox_changed(m, NT_MAILBOX_RESORT);
+  }
 
   mx_fastclose_mailbox(m);
   ctx_free(ptr);
