@@ -447,6 +447,7 @@ int maildir_mbox_check(struct Mailbox *m, int *index_hint)
   for (p = md; p; p = p->next)
   {
     maildir_canon_filename(buf, p->email->path);
+    maildir_sanitize_filename(buf);
     p->canon_fname = mutt_buffer_strdup(buf);
     mutt_hash_insert(fnames, p->canon_fname, p);
   }
@@ -460,6 +461,7 @@ int maildir_mbox_check(struct Mailbox *m, int *index_hint)
 
     e->active = false;
     maildir_canon_filename(buf, e->path);
+    maildir_sanitize_filename(buf);
     p = mutt_hash_find(fnames, mutt_b2s(buf));
     if (p && p->email)
     {

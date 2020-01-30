@@ -1125,6 +1125,20 @@ int mh_rewrite_message(struct Mailbox *m, int msgno)
 }
 
 /**
+ * maildir_sanitize_filename - sanitize filename for hashing
+ * @param Buf    Buffer to sanitize
+ */
+void maildir_sanitize_filename(struct Buffer *buf)
+{
+  if (!buf || !buf->data)
+    return;
+
+  char *u = strchr(buf->data, ',');
+  if (u)
+    *u = '\0';
+}
+
+/**
  * maildir_canon_filename - Generate the canonical filename for a Maildir folder
  * @param dest   Buffer for the result
  * @param src    Buffer containing source filename
