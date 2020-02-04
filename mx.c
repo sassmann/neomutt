@@ -305,7 +305,20 @@ struct Context *mx_mbox_open(struct Mailbox *m, OpenMailboxFlags flags)
   if (!m)
     return NULL;
 
-  struct Context *ctx = ctx_new(m);
+  struct Context *ctx = NULL, *np = NULL;;
+  STAILQ_FOREACH(np, &ContextList, entries)
+  {
+    if (np->mailbox == m)
+    {
+      ctx = np;
+      break;
+    }
+  }
+  if (!ctx)
+  {
+    ctx = ctx_new(m);
+    STAILQ_INSERT_TAIL(&ContextList, ctx, entries);
+  }
 
   struct EventContext ev_ctx = { ctx };
   notify_send(ctx->notify, NT_CONTEXT, NT_CONTEXT_OPEN, &ev_ctx);
