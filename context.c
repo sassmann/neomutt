@@ -43,6 +43,8 @@
 #include "score.h"
 #include "sort.h"
 
+struct ContextList ContextList = STAILQ_HEAD_INITIALIZER(ContextList); ///< List of Contexts
+
 /**
  * ctx_free - Free a Context
  * @param[out] ptr Context to free
@@ -65,6 +67,7 @@ void ctx_free(struct Context **ptr)
   FREE(&ctx->pattern);
   mutt_pattern_free(&ctx->limit_pattern);
 
+  STAILQ_REMOVE(&ContextList, ctx, Context, entries);
   FREE(ptr);
 }
 
