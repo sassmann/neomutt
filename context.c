@@ -42,6 +42,8 @@
 #include "score.h"
 #include "sort.h"
 
+struct ContextList contexts = STAILQ_HEAD_INITIALIZER(contexts); ///< List of Contexts
+
 /**
  * ctx_free - Free a Context
  * @param[out] ptr Context to free
@@ -52,6 +54,7 @@ void ctx_free(struct Context **ptr)
     return;
 
   struct Context *ctx = *ptr;
+  struct Context *np = NULL, *tmp = NULL;
 
   struct EventContext ev_ctx = { ctx };
   notify_send(ctx->notify, NT_CONTEXT, NT_CONTEXT_CLOSE, &ev_ctx);
@@ -62,7 +65,15 @@ void ctx_free(struct Context **ptr)
   mutt_hash_free(&ctx->thread_hash);
   notify_free(&ctx->notify);
 
-  FREE(ptr);
+  STAILQ_FOREACH_SAFE(np, &contexts, entries, tmp)
+  {
+    if (np == ctx)
+    {
+      STAILQ_REMOVE(&contexts, np, Context, entries);
+      FREE(&np);
+      break;
+    }
+  }
 }
 
 /**

@@ -83,6 +83,7 @@ bool C_KeepFlagged; ///< Config: Don't move flagged messages from #C_Spoolfile t
 unsigned char C_MboxType; ///< Config: Default type for creating new mailboxes
 unsigned char C_Move; ///< Config: Move emails from #C_Spoolfile to #C_Mbox when read
 char *C_Trash;        ///< Config: Folder to put deleted emails
+extern struct ContextList contexts;
 
 // clang-format off
 static struct Mapping MagicMap[] = {
@@ -255,8 +256,24 @@ struct Context *mx_mbox_open(struct Mailbox *m, OpenMailboxFlags flags)
   if (!m)
     return NULL;
 
-  struct Context *ctx = ctx_new();
-  ctx->mailbox = m;
+  struct Context *ctx = NULL;
+  struct Context *np = NULL;
+  STAILQ_FOREACH(np, &contexts, entries)
+  {
+    if (np->mailbox == m)
+    {
+      ctx = np;
+      break;
+    }
+  }
+  if (!ctx)
+  {
+    ctx = ctx_new();
+    ctx->mailbox = m;
+    np = mutt_mem_calloc(1, sizeof(*np));
+    np = ctx;
+    STAILQ_INSERT_TAIL(&contexts, np, entries);
+  }
 
   struct EventContext ev_ctx = { ctx };
   notify_send(ctx->notify, NT_CONTEXT, NT_CONTEXT_OPEN, &ev_ctx);
