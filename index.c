@@ -500,7 +500,8 @@ static void update_index_threaded(struct Context *ctx, int check, int oldcount)
    * require the threading information.
    *
    * If the mailbox was reopened, need to rethread from scratch. */
-  mutt_sort_headers(ctx, (check == MUTT_REOPENED));
+  if (check == MUTT_REOPENED)
+    mutt_sort_headers(ctx, true);
 
   if (ctx->pattern)
   {
