@@ -3609,7 +3609,7 @@ int mutt_index_menu(struct MuttWindow *dlg)
             {
               menu->current = menu->oldcurrent;
             }
-            else if (in_pager)
+            if (in_pager)
             {
               op = OP_DISPLAY_MESSAGE;
               continue;
