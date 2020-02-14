@@ -328,6 +328,9 @@ static int ci_next_undeleted(struct Context *ctx, int msgno)
   if (!ctx || !ctx->mailbox)
     return -1;
 
+  /* already on the last message */
+  if (msgno + 1 == ctx->mailbox->vcount)
+    return msgno;
   for (int i = msgno + 1; i < ctx->mailbox->vcount; i++)
   {
     struct Email *e = mutt_get_virt_email(ctx->mailbox, i);
@@ -351,6 +354,9 @@ static int ci_previous_undeleted(struct Context *ctx, int msgno)
   if (!ctx || !ctx->mailbox)
     return -1;
 
+  /* already on first message */
+  if (msgno == 0)
+    return 0;
   for (int i = msgno - 1; i >= 0; i--)
   {
     struct Email *e = mutt_get_virt_email(ctx->mailbox, i);
@@ -2687,9 +2693,9 @@ int mutt_index_menu(struct MuttWindow *dlg)
           break;
         if (menu->current >= (Context->mailbox->vcount - 1))
         {
+          mutt_message(_("You are on the last message"));
           if (!in_pager)
-            mutt_message(_("You are on the last message"));
-          break;
+            break;
         }
         menu->current = ci_next_undeleted(Context, menu->current);
         if (menu->current == -1)
@@ -2732,7 +2738,8 @@ int mutt_index_menu(struct MuttWindow *dlg)
         if (menu->current < 1)
         {
           mutt_message(_("You are on the first message"));
-          break;
+          if (!in_pager)
+            break;
         }
         menu->current = ci_previous_undeleted(Context, menu->current);
         if (menu->current == -1)
