@@ -1288,8 +1288,13 @@ int mutt_traverse_thread(struct Email *e_cur, MuttThreadFlags flag)
   while (thread->parent)
     thread = thread->parent;
   top = thread;
-  while (!thread->message)
+  while (!thread->message) {
     thread = thread->child;
+    if (!thread) {
+    mutt_error(_("FATAL Threading error thread == NULL"));
+    return 0;
+    }
+  }
   e_cur = thread->message;
   minmsgno = e_cur->msgno;
 
